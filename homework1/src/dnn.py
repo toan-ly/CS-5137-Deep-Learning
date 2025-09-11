@@ -2,7 +2,23 @@ import torch
 import torch.nn as nn
 
 class DNN(nn.Module):
-    def __init__(self, input_dim: int, hidden_layers: list, output_dim: int = 1, lr: float = 0.01):
+    """
+    Deep Neural Network (DNN).
+    """
+    def __init__(
+        self, 
+        input_dim: int, 
+        hidden_layers: list, 
+        output_dim: int = 1, 
+        lr: float = 0.01
+    ):
+        """
+        Args:
+            input_dim: number of input features
+            hidden_layers: list of hidden layer sizes, e.g. [16, 32]
+            output_dim: number of output features
+            lr: learning rate
+        """
         super(DNN, self).__init__()
         layers = []
 
@@ -13,7 +29,7 @@ class DNN(nn.Module):
             layers.append(nn.ReLU())
         layers.append(nn.Linear(hidden_layers[-1], output_dim))
         self.model = nn.Sequential(*layers)
-        # self.init_weights()
+        self.init_weights()
 
         self.criterion = nn.MSELoss()
         self.optimizer = torch.optim.SGD(self.parameters(), lr=lr)
@@ -21,7 +37,7 @@ class DNN(nn.Module):
     def init_weights(self):
         for layer in self.model:
             if isinstance(layer, nn.Linear):
-                nn.init.xavier_uniform_(layer.weight)
+                nn.init.normal_(layer.weight, mean=0.0, std=1.0)
                 nn.init.zeros_(layer.bias)
     
     def forward(self, x):
@@ -60,7 +76,14 @@ class DNN(nn.Module):
             train_loss.backward()
             self.optimizer.step()
 
-            if verbose and epoch % 100 == 0:
-                print(f"Epoch {epoch}: Train loss: {train_loss.item()}, Val loss: {val_loss.item()}")
+            if verbose and (epoch + 1) % int(epochs / 10) == 0:
+                print(f'Epoch [{epoch + 1}/{epochs}], Train Loss: {train_loss.item():.4f}, Val Loss: {val_loss.item():.4f}')
 
         return train_losses, val_losses
+
+    def predict(self, X):
+        X = torch.tensor(X, dtype=torch.float32)
+        self.eval()
+        with torch.no_grad():
+            y_pred = self.forward(X)
+        return y_pred.cpu().numpy()

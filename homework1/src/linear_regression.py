@@ -1,5 +1,4 @@
 from sklearn.linear_model import LinearRegression as sklearn_LinearRegression
-from sklearn.metrics import mean_squared_error, r2_score
 import numpy as np
 import torch
 import torch.nn as nn
@@ -70,17 +69,17 @@ class LinearRegressionNumpy:
             loss = self.loss(y_pred, y)
             train_losses.append(loss)
 
+            # Backward pass
+            dW, db = self.gradients(X, y, y_pred)
+            self.update_weights(dW, db)
+
             # Validation
             y_val_pred = self.predict(X_val)
             val_loss = self.loss(y_val_pred, y_val)
             val_losses.append(val_loss)
 
-            # Backward pass
-            dW, db = self.gradients(X, y, y_pred)
-            self.update_weights(dW, db)
-
             # Logging
-            if verbose and (epoch + 1) % 100 == 0:
+            if verbose and (epoch + 1) % int(epochs / 10) == 0:
                 print(f'Epoch [{epoch + 1}/{epochs}], Train Loss: {loss:.4f}, Val Loss: {val_loss:.4f}')
 
         return train_losses, val_losses
@@ -119,20 +118,21 @@ class LinearRegressionTorch(nn.Module):
             # Train Loss
             train_loss = self.criterion(y_pred, y)
             train_losses.append(train_loss.item())
-
-            # Validation loss
-            with torch.no_grad():
-                y_val_pred = self.predict(X_val)
-                val_loss = self.criterion(y_val_pred, y_val)
-                val_losses.append(val_loss.item())
-
+           
             # Backward pass 
             self.optimizer.zero_grad()
             train_loss.backward()
             self.optimizer.step()
 
+            # Validation loss
+            self.model.eval()
+            with torch.no_grad():
+                y_val_pred = self.model(X_val)
+                val_loss = self.criterion(y_val_pred, y_val)
+                val_losses.append(val_loss.item())
+
             # Logging
-            if verbose and (epoch + 1) % 100 == 0:
+            if verbose and (epoch + 1) % int(epochs / 10) == 0:
                 print(f'Epoch [{epoch + 1}/{epochs}], Train Loss: {train_loss.item():.4f}, Val Loss: {val_loss.item():.4f}')
 
         return train_losses, val_losses
@@ -142,5 +142,5 @@ class LinearRegressionTorch(nn.Module):
         self.model.eval()
         with torch.no_grad():
             y_pred = self.model(X)
-        return y_pred   
+        return y_pred.cpu().numpy() 
  

@@ -12,12 +12,14 @@ def load_data(file_path):
         return df
     
 def test_model(model, X, y):
+    print("\n========= Model Evaluation =========")
     y_pred = model.predict(X)
     mse = mean_squared_error(y, y_pred)
     r2 = r2_score(y, y_pred)
     
     print(f'Mean Squared Error (MSE): {mse:.4f}')
     print(f'R^2 Score: {r2:.4f}')
+    print("="*36)
 
 def plot_loss(train_losses, val_losses, title=''):
     plt.figure(figsize=(10, 6))
