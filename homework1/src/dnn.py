@@ -37,7 +37,7 @@ class DNN(nn.Module):
     def init_weights(self):
         for layer in self.model:
             if isinstance(layer, nn.Linear):
-                nn.init.normal_(layer.weight, mean=0.0, std=1.0)
+                nn.init.kaiming_uniform_(layer.weight)
                 nn.init.zeros_(layer.bias)
     
     def forward(self, x):
