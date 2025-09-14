@@ -65,7 +65,7 @@ class DNN(nn.Module):
         val_loader,
         epochs=1000, 
         verbose=True, 
-        early_stopping=True, 
+        early_stopping=False, 
         patience=10, 
         ):
         """

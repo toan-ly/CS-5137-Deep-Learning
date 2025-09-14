@@ -11,6 +11,10 @@ class LinearRegressionSklearn:
         self.model = sklearn_LinearRegression()
 
     def fit(self, X, y):
+        """
+        X: shape (n_samples, n_features)
+        y: shape (n_samples, 1)
+        """
         self.model.fit(X, y)
 
     def predict(self, X):
@@ -62,6 +66,12 @@ class LinearRegressionNumpy:
             y: shape (n_samples, 1)
             X_val, y_val: validation set
         """
+        # input are pytorch tensors, convert to numpy arrays
+        X = X.numpy()
+        y = y.numpy()
+        X_val = X_val.numpy()
+        y_val = y_val.numpy()
+
         train_losses, val_losses = [], []
         for epoch in range(epochs):
             # Forward pass
@@ -102,7 +112,7 @@ class LinearRegressionTorch(nn.Module):
         val_loader, 
         epochs=1000, 
         verbose=True, 
-        early_stopping=True, 
+        early_stopping=False, 
         patience=10, 
         ):
         """

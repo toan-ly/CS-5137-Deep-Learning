@@ -3,15 +3,6 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from sklearn.metrics import mean_squared_error, r2_score
 
-def load_data(file_path):
-    try:
-        df = pd.read_csv(file_path)
-        return df
-    except Exception as e:
-        print(f"Warning: {e}. Skip for now, trying with 'latin1' encoding.")
-        df = pd.read_csv(file_path, encoding='latin1')
-        return df
-
 def plot_density(df, num_cols=4):
     """
     Plot the density distribution of each numerical feature in the DataFrame.
@@ -27,7 +18,6 @@ def plot_density(df, num_cols=4):
 
     plt.tight_layout()
     plt.show()
-
     
 def test_model(model, X, y):
     print("\n========= Model Evaluation =========")
@@ -39,7 +29,7 @@ def test_model(model, X, y):
     print(f'R^2 Score: {r2:.4f}')
     print("="*36)
 
-def plot_loss(train_losses, val_losses, title=''):
+def plot_loss(train_losses, val_losses, title='', save_path=None):
     plt.figure(figsize=(10, 6))
     plt.plot(train_losses, label='Train Loss')
     plt.plot(val_losses, label='Validation Loss')
@@ -49,3 +39,9 @@ def plot_loss(train_losses, val_losses, title=''):
     plt.legend()
     plt.grid()
     plt.show()
+
+    if save_path:
+        plt.savefig(save_path)
+
+def save_results(results, file_path):
+    pass
