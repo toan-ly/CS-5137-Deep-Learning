@@ -11,7 +11,11 @@ class DNN(nn.Module):
         input_dim: int, 
         hidden_layers: list, 
         output_dim: int = 1, 
-        lr: float = 0.01
+        dropout: float = 0.0,
+        batch_norm: bool = False,
+        lr: float = 0.01,
+        grad_clip: bool = False,
+        l2_lambda: float = 0.0
     ):
         """
         Args:
@@ -24,16 +28,27 @@ class DNN(nn.Module):
         layers = []
 
         layers.append(nn.Linear(input_dim, hidden_layers[0]))
-        layers.append(nn.Sigmoid())
+        layers.append(nn.ReLU())
         for i in range(len(hidden_layers) - 1):
             layers.append(nn.Linear(hidden_layers[i], hidden_layers[i + 1]))
-            layers.append(nn.Sigmoid())
+
+            if batch_norm:
+                layers.append(nn.BatchNorm1d(hidden_layers[i + 1]))
+
+            layers.append(nn.ReLU())
+
+            if dropout > 0:
+                layers.append(nn.Dropout(dropout))
+
         layers.append(nn.Linear(hidden_layers[-1], output_dim))
         self.model = nn.Sequential(*layers)
-        # self.init_weights()
+        self.init_weights()
 
         self.criterion = nn.MSELoss()
-        self.optimizer = torch.optim.SGD(self.parameters(), lr=lr)
+        self.optimizer = torch.optim.SGD(self.parameters(), lr=lr, weight_decay=1e-4)
+        self.lr = lr
+        self.grad_clip = grad_clip
+        self.l2_lambda = l2_lambda
 
     def init_weights(self):
         for layer in self.model:
@@ -82,13 +97,23 @@ class DNN(nn.Module):
 
                 y_pred = self.forward(X)    
                 train_loss = self.criterion(y_pred, y)
+
+                # L2 regularization
+                if self.l2_lambda > 0:
+                    l2_loss = 0
+                    for param in self.parameters():
+                        l2_loss += torch.sum(param ** 2)
+                    train_loss += self.l2_lambda * l2_loss
+
+
                 batch_train_losses.append(train_loss.item())
 
                 # Backward pass
                 train_loss.backward()
 
                 # Gradient clipping to prevent exploding gradients
-                # torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=10.0)
+                if self.grad_clip:
+                    torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=10.0)
                 self.optimizer.step()
 
             train_loss = np.mean(batch_train_losses)
