@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 
+
 class DNN(nn.Module):
     """
     Deep Neural Network (DNN).
@@ -15,7 +16,8 @@ class DNN(nn.Module):
         batch_norm: bool = False,
         lr: float = 0.01,
         grad_clip: bool = False,
-        l2_lambda: float = 0.0
+        l2_lambda: float = 0.0,
+        activation='leaky_relu',
     ):
         """
         Args:
@@ -28,14 +30,26 @@ class DNN(nn.Module):
         layers = []
 
         layers.append(nn.Linear(input_dim, hidden_layers[0]))
-        layers.append(nn.ReLU())
+        
+        if activation == 'relu':
+            self.act = nn.ReLU()
+        elif activation == 'tanh':
+            self.act = nn.Tanh()
+        elif activation == 'sigmoid':
+            self.act = nn.Sigmoid()
+        elif activation == 'leaky_relu':
+            self.act = nn.LeakyReLU()
+        else:
+            raise ValueError(f"Unsupported activation: {activation}")
+
+        layers.append(self.act)
         for i in range(len(hidden_layers) - 1):
             layers.append(nn.Linear(hidden_layers[i], hidden_layers[i + 1]))
 
             if batch_norm:
                 layers.append(nn.BatchNorm1d(hidden_layers[i + 1]))
 
-            layers.append(nn.ReLU())
+            layers.append(self.act)
 
             if dropout > 0:
                 layers.append(nn.Dropout(dropout))
