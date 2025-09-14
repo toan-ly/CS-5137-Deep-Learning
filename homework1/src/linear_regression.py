@@ -96,49 +96,82 @@ class LinearRegressionTorch(nn.Module):
         self.criterion = nn.MSELoss()
         self.optimizer = torch.optim.SGD(self.model.parameters(), lr=self.lr)
 
-    def fit(self, X, y, X_val, y_val, epochs=1000, verbose=True):
+    def fit(
+        self, 
+        train_loader, 
+        val_loader, 
+        epochs=1000, 
+        verbose=True, 
+        early_stopping=True, 
+        patience=10, 
+        ):
         """
         Train model using Gradient Descent
 
         Args:
-            X: X_train, shape (n_samples, n_features)
-            y: y_train, shape (n_samples, 1)
-            X_val, y_val: validation set
+            train_loader: DataLoader for training data
+                X: shape (n_samples, n_features)
+                y: shape (n_samples, 1)
+            val_loader: DataLoader for validation data
+                X: shape (n_samples, n_features)
+                y: shape (n_samples, 1)
+            epochs: number of training epochs
+            verbose: whether to print training progress
         """
-        X = torch.tensor(X, dtype=torch.float32)
-        y = torch.tensor(y, dtype=torch.float32)
-        X_val = torch.tensor(X_val, dtype=torch.float32)
-        y_val = torch.tensor(y_val, dtype=torch.float32)
-
         train_losses, val_losses = [], []
+        best_val_loss = float('inf')
+        best_weights = None
+        patience_counter = 0
         for epoch in range(epochs):
-            # Forward pass
-            y_pred = self.model(X)
+            # Training loop
+            self.model.train()
+            batch_train_losses = []
+            for X, y in train_loader:
+                # Forward pass
+                y_pred = self.model(X)
 
-            # Train Loss
-            train_loss = self.criterion(y_pred, y)
-            train_losses.append(train_loss.item())
-           
-            # Backward pass 
-            self.optimizer.zero_grad()
-            train_loss.backward()
-            self.optimizer.step()
+                # Train Loss
+                train_loss = self.criterion(y_pred, y)
+                batch_train_losses.append(train_loss.item())
+
+                # Backward pass
+                self.optimizer.zero_grad()
+                train_loss.backward()
+                self.optimizer.step()
+            train_losses.append(np.mean(batch_train_losses))
 
             # Validation loss
             self.model.eval()
-            with torch.no_grad():
-                y_val_pred = self.model(X_val)
-                val_loss = self.criterion(y_val_pred, y_val)
-                val_losses.append(val_loss.item())
+            batch_val_losses = []
+            for X, y in val_loader:
+                with torch.no_grad():
+                    y_val_pred = self.model(X)
+                    val_loss = self.criterion(y_val_pred, y)
+                    batch_val_losses.append(val_loss.item())
+            val_loss = np.mean(batch_val_losses)
+            val_losses.append(val_loss)
 
             # Logging
             if verbose and (epoch + 1) % int(epochs / 10) == 0:
-                print(f'Epoch [{epoch + 1}/{epochs}], Train Loss: {train_loss.item():.4f}, Val Loss: {val_loss.item():.4f}')
+                print(f'Epoch [{epoch + 1}/{epochs}], Train Loss: {train_losses[-1]:.4f}, Val Loss: {val_loss:.4f}')
+
+            # Early stopping
+            if early_stopping:
+                if val_loss < best_val_loss:
+                    best_val_loss = val_loss
+                    best_weights = self.model.state_dict()
+                    patience_counter = 0
+                else:
+                    patience_counter += 1
+                    if patience_counter >= patience:
+                        print(f'Early stopping at epoch {epoch + 1}')
+                        if best_weights is not None:
+                            self.model.load_state_dict(best_weights) # Restore best weights
+                        break
 
         return train_losses, val_losses
 
     def predict(self, X):   
-        X = torch.tensor(X, dtype=torch.float32)
         self.model.eval()
         with torch.no_grad():
             y_pred = self.model(X)

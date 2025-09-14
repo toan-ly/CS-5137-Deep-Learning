@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import numpy as np
 
 class DNN(nn.Module):
     """
@@ -23,13 +24,13 @@ class DNN(nn.Module):
         layers = []
 
         layers.append(nn.Linear(input_dim, hidden_layers[0]))
-        layers.append(nn.ReLU())
+        layers.append(nn.Sigmoid())
         for i in range(len(hidden_layers) - 1):
             layers.append(nn.Linear(hidden_layers[i], hidden_layers[i + 1]))
-            layers.append(nn.ReLU())
+            layers.append(nn.Sigmoid())
         layers.append(nn.Linear(hidden_layers[-1], output_dim))
         self.model = nn.Sequential(*layers)
-        self.init_weights()
+        # self.init_weights()
 
         self.criterion = nn.MSELoss()
         self.optimizer = torch.optim.SGD(self.parameters(), lr=lr)
@@ -37,52 +38,94 @@ class DNN(nn.Module):
     def init_weights(self):
         for layer in self.model:
             if isinstance(layer, nn.Linear):
-                nn.init.kaiming_uniform_(layer.weight)
+                nn.init.kaiming_uniform_(layer.weight, nonlinearity='relu')
                 nn.init.zeros_(layer.bias)
     
     def forward(self, x):
         return self.model(x)
-    
-    def fit(self, X, y, X_val, y_val, epochs=1000, verbose=True):
+
+    def fit(
+        self, 
+        train_loader, 
+        val_loader,
+        epochs=1000, 
+        verbose=True, 
+        early_stopping=True, 
+        patience=10, 
+        ):
         """
         Train model using SGD optimizer
 
         Args:
-            X: shape (n_samples, n_features)
-            y: shape (n_samples, 1)
-            X_val, y_val: validation set
+            train_loader: DataLoader for training data
+                X: shape (n_samples, n_features)
+                y: shape (n_samples, 1)
+            val_loader: DataLoader for validation data
+                X: shape (n_samples, n_features)
+                y: shape (n_samples, 1)
+            epochs: number of training epochs
+            verbose: whether to print training progress
+            early_stopping: whether to use early stopping
+            patience: number of epochs to wait for improvement before stopping
         """
-        X = torch.tensor(X, dtype=torch.float32)
-        y = torch.tensor(y, dtype=torch.float32)
-        X_val = torch.tensor(X_val, dtype=torch.float32)
-        y_val = torch.tensor(y_val, dtype=torch.float32)
-
         train_losses, val_losses = [], []
+        best_val_loss = float('inf')
+        best_weights = None
+        patience_counter = 0
         for epoch in range(epochs):
-            # Forward pass
-            self.optimizer.zero_grad()
+            # Training loop
+            self.model.train()
+            batch_train_losses = []
+            for X, y in train_loader:
+                # Forward pass
+                self.optimizer.zero_grad()
 
-            y_pred = self.forward(X)    
-            train_loss = self.criterion(y_pred, y)
-            train_losses.append(train_loss.item())
+                y_pred = self.forward(X)    
+                train_loss = self.criterion(y_pred, y)
+                batch_train_losses.append(train_loss.item())
 
-            # Validation loss
+                # Backward pass
+                train_loss.backward()
+
+                # Gradient clipping to prevent exploding gradients
+                # torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=10.0)
+                self.optimizer.step()
+
+            train_loss = np.mean(batch_train_losses)
+            train_losses.append(train_loss)
+
+            # Validation loop
+            self.model.eval()
+            batch_val_losses = []
             with torch.no_grad():
-                y_val_pred = self.forward(X_val)
-                val_loss = self.criterion(y_val_pred, y_val)
-                val_losses.append(val_loss.item())
+                for X_val, y_val in val_loader:
+                    y_val_pred = self.forward(X_val)
+                    val_loss = self.criterion(y_val_pred, y_val)
+                    batch_val_losses.append(val_loss.item())
+            val_loss = np.mean(batch_val_losses)
+            val_losses.append(val_loss)
 
-            # Backward pass
-            train_loss.backward()
-            self.optimizer.step()
+            # Logging
+            if verbose and (epoch + 1) % (epochs // 10) == 0:
+                print(f'Epoch [{epoch + 1}/{epochs}], Train Loss: {train_loss:.4f}, Val Loss: {val_loss:.4f}')
 
-            if verbose and (epoch + 1) % int(epochs / 10) == 0:
-                print(f'Epoch [{epoch + 1}/{epochs}], Train Loss: {train_loss.item():.4f}, Val Loss: {val_loss.item():.4f}')
+            # Early stopping
+            if early_stopping:
+                if val_loss < best_val_loss:
+                    best_val_loss = val_loss
+                    best_weights = self.state_dict()
+                    patience_counter = 0
+                else:
+                    patience_counter += 1
+                    if patience_counter >= patience:
+                        print(f'Early stopping at epoch {epoch + 1}')
+                        if best_weights is not None:
+                            self.load_state_dict(best_weights) # Restore best weights
+                        break
 
         return train_losses, val_losses
 
     def predict(self, X):
-        X = torch.tensor(X, dtype=torch.float32)
         self.eval()
         with torch.no_grad():
             y_pred = self.forward(X)
