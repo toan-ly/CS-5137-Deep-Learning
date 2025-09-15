@@ -15,9 +15,8 @@ class DNN(nn.Module):
         dropout: float = 0.0,
         batch_norm: bool = False,
         lr: float = 0.01,
-        grad_clip: bool = False,
         l2_lambda: float = 0.0,
-        activation='leaky_relu',
+        activation='sigmoid',
     ):
         """
         Args:
@@ -27,10 +26,8 @@ class DNN(nn.Module):
             lr: learning rate
         """
         super(DNN, self).__init__()
-        layers = []
 
-        layers.append(nn.Linear(input_dim, hidden_layers[0]))
-        
+        self.activation = activation
         if activation == 'relu':
             self.act = nn.ReLU()
         elif activation == 'tanh':
@@ -42,6 +39,8 @@ class DNN(nn.Module):
         else:
             raise ValueError(f"Unsupported activation: {activation}")
 
+        layers = []
+        layers.append(nn.Linear(input_dim, hidden_layers[0]))
         layers.append(self.act)
         for i in range(len(hidden_layers) - 1):
             layers.append(nn.Linear(hidden_layers[i], hidden_layers[i + 1]))
@@ -61,13 +60,17 @@ class DNN(nn.Module):
         self.criterion = nn.MSELoss()
         self.optimizer = torch.optim.SGD(self.parameters(), lr=lr, weight_decay=1e-4)
         self.lr = lr
-        self.grad_clip = grad_clip
         self.l2_lambda = l2_lambda
 
     def init_weights(self):
         for layer in self.model:
             if isinstance(layer, nn.Linear):
-                nn.init.kaiming_uniform_(layer.weight, nonlinearity='relu')
+                if self.activation == 'relu':
+                    nn.init.kaiming_normal_(layer.weight, nonlinearity='relu')
+                elif self.activation == 'sigmoid':
+                    nn.init.xavier_normal_(layer.weight)
+                else:
+                    nn.init.normal_(layer.weight, mean=0.0, std=0.01)
                 nn.init.zeros_(layer.bias)
     
     def forward(self, x):
@@ -81,6 +84,7 @@ class DNN(nn.Module):
         verbose=True, 
         early_stopping=False, 
         patience=10, 
+        grad_clip=False,
         ):
         """
         Train model using SGD optimizer
@@ -119,14 +123,13 @@ class DNN(nn.Module):
                         l2_loss += torch.sum(param ** 2)
                     train_loss += self.l2_lambda * l2_loss
 
-
                 batch_train_losses.append(train_loss.item())
 
                 # Backward pass
                 train_loss.backward()
 
                 # Gradient clipping to prevent exploding gradients
-                if self.grad_clip:
+                if grad_clip:
                     torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=10.0)
                 self.optimizer.step()
 

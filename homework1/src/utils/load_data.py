@@ -12,17 +12,17 @@ def load_data(file_path):
 
 def load_processed_data(file_path):
     X_train = pd.read_csv(f'{file_path}/X_train.csv').values
-    y_train = pd.read_csv(f'{file_path}/y_train.csv').values
     X_val = pd.read_csv(f'{file_path}/X_val.csv').values
-    y_val = pd.read_csv(f'{file_path}/y_val.csv').values
     X_test = pd.read_csv(f'{file_path}/X_test.csv').values
+    y_train = pd.read_csv(f'{file_path}/y_train.csv').values
+    y_val = pd.read_csv(f'{file_path}/y_val.csv').values
     y_test = pd.read_csv(f'{file_path}/y_test.csv').values
 
     X_train = torch.tensor(X_train, dtype=torch.float32)
-    y_train = torch.tensor(y_train, dtype=torch.float32)
     X_val = torch.tensor(X_val, dtype=torch.float32)
-    y_val = torch.tensor(y_val, dtype=torch.float32)
     X_test = torch.tensor(X_test, dtype=torch.float32)
+    y_train = torch.tensor(y_train, dtype=torch.float32)
+    y_val = torch.tensor(y_val, dtype=torch.float32)
     y_test = torch.tensor(y_test, dtype=torch.float32)
 
     print(f'X_train shape: {X_train.shape}, y_train shape: {y_train.shape}')

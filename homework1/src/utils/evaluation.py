@@ -1,7 +1,7 @@
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
-from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
 
 def plot_density(df, num_cols=4):
     """
@@ -22,14 +22,16 @@ def plot_density(df, num_cols=4):
 def test_model(model, X, y):
     print("\n========= Model Evaluation =========")
     y_pred = model.predict(X)
+    mae = mean_absolute_error(y, y_pred)
     mse = mean_squared_error(y, y_pred)
     r2 = r2_score(y, y_pred)
-    
+
+    print(f'Mean Absolute Error (MAE): {mae:.4f}')
     print(f'Mean Squared Error (MSE): {mse:.4f}')
     print(f'R^2 Score: {r2:.4f}')
     print("="*36)
 
-def plot_loss(train_losses, val_losses, title='', save_path=None):
+def plot_loss(train_losses, val_losses, title='', save_path=None, log=False):
     plt.figure(figsize=(10, 6))
     plt.plot(train_losses, label='Train Loss')
     plt.plot(val_losses, label='Validation Loss')
@@ -38,6 +40,9 @@ def plot_loss(train_losses, val_losses, title='', save_path=None):
     plt.title(title)
     plt.legend()
     plt.grid()
+    if log:
+        plt.yscale('log')
+        plt.title(title + ' (Log Scale)')
     plt.show()
 
     if save_path:
