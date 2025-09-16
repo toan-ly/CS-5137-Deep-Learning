@@ -16,7 +16,7 @@ class DNN(nn.Module):
         batch_norm: bool = False,
         lr: float = 0.01,
         l2_lambda: float = 0.0,
-        activation='sigmoid',
+        activation='relu',
     ):
         """
         Args:
