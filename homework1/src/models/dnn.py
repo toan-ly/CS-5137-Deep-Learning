@@ -17,6 +17,7 @@ class DNN(nn.Module):
         lr: float = 0.01,
         l2_lambda: float = 0.0,
         activation='relu',
+        weight_decay: float = 0.0,
     ):
         """
         Args:
@@ -28,17 +29,9 @@ class DNN(nn.Module):
         super(DNN, self).__init__()
 
         self.activation = activation
-        if activation == 'relu':
-            self.act = nn.ReLU()
-        elif activation == 'tanh':
-            self.act = nn.Tanh()
-        elif activation == 'sigmoid':
-            self.act = nn.Sigmoid()
-        elif activation == 'leaky_relu':
-            self.act = nn.LeakyReLU()
-        else:
-            raise ValueError(f"Unsupported activation: {activation}")
+        self.act = self._activation(activation)
 
+        # Linear -> Act -> [Linear -> BatchNorm (optional) -> Act -> Dropout (optional)]* -> Linear
         layers = []
         layers.append(nn.Linear(input_dim, hidden_layers[0]))
         layers.append(self.act)
@@ -55,23 +48,40 @@ class DNN(nn.Module):
 
         layers.append(nn.Linear(hidden_layers[-1], output_dim))
         self.model = nn.Sequential(*layers)
-        self.init_weights()
+        self._init_weights()
 
         self.criterion = nn.MSELoss()
-        self.optimizer = torch.optim.SGD(self.parameters(), lr=lr, weight_decay=1e-4)
+        self.optimizer = torch.optim.SGD(self.parameters(), lr=lr, weight_decay=weight_decay)
         self.lr = lr
         self.l2_lambda = l2_lambda
 
-    def init_weights(self):
+    def _init_weights(self):
         for layer in self.model:
             if isinstance(layer, nn.Linear):
                 if self.activation == 'relu':
                     nn.init.kaiming_normal_(layer.weight, nonlinearity='relu')
-                elif self.activation == 'sigmoid':
-                    nn.init.xavier_normal_(layer.weight)
+                elif self.activation == 'leaky_relu':
+                    nn.init.kaiming_normal_(layer.weight, a=0.01, nonlinearity='leaky_relu')
+                elif self.activation in ['tanh', 'sigmoid']:
+                    nn.init.xavier_uniform_(layer.weight)
                 else:
-                    nn.init.normal_(layer.weight, mean=0.0, std=0.01)
+                    nn.init.xavier_uniform_(layer.weight) # Default
                 nn.init.zeros_(layer.bias)
+            elif isinstance(layer, nn.BatchNorm1d):
+                nn.init.ones_(layer.weight)
+                nn.init.zeros_(layer.bias)
+
+    def _activation(self, name: str):
+        if name == 'relu':
+            return nn.ReLU()
+        elif name == 'tanh':
+            return nn.Tanh()
+        elif name == 'sigmoid':
+            return nn.Sigmoid()
+        elif name == 'leaky_relu':
+            return nn.LeakyReLU()
+        else:
+            raise ValueError(f"Unsupported activation: {name}")
     
     def forward(self, x):
         return self.model(x)
@@ -167,6 +177,7 @@ class DNN(nn.Module):
 
         return train_losses, val_losses
 
+    @torch.no_grad()
     def predict(self, X):
         self.eval()
         with torch.no_grad():
