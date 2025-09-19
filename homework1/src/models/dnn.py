@@ -25,24 +25,29 @@ class DNN(nn.Module):
             input_dim: number of input features
             hidden_layers: list of hidden layer sizes, e.g. [16, 32]
             output_dim: number of output features
-            lr: learning rate
+            dropout: dropout rate (0.0 means no dropout)
+            batch_norm: whether to use batch normalization
+            lr: learning rate 
+            l2_lambda: L2 regularization
+            activation: activation function ('relu', 'tanh', 'sigmoid', 'leaky_relu')
+            weight_decay: weight decay (L2 penalty) for optimizer
+            momentum: momentum for SGD optimizer (default: 0.0)
         """
         super(DNN, self).__init__()
 
         self.activation = activation
-        self.act = self._activation(activation)
 
         # Linear -> Act -> [Linear -> BatchNorm (optional) -> Act -> Dropout (optional)]* -> Linear
         layers = []
         layers.append(nn.Linear(input_dim, hidden_layers[0]))
-        layers.append(self.act)
+        layers.append(self._activation())
         for i in range(len(hidden_layers) - 1):
             layers.append(nn.Linear(hidden_layers[i], hidden_layers[i + 1]))
 
             if batch_norm:
                 layers.append(nn.BatchNorm1d(hidden_layers[i + 1]))
 
-            layers.append(self.act)
+            layers.append(self._activation())
 
             if dropout > 0:
                 layers.append(nn.Dropout(dropout))
@@ -57,6 +62,9 @@ class DNN(nn.Module):
         self.l2_lambda = l2_lambda
 
     def _init_weights(self):
+        """
+        Initialize weights for linear and batch norm layers
+        """
         for layer in self.model:
             if isinstance(layer, nn.Linear):
                 if self.activation == 'relu':
@@ -72,17 +80,17 @@ class DNN(nn.Module):
                 nn.init.ones_(layer.weight)
                 nn.init.zeros_(layer.bias)
 
-    def _activation(self, name: str):
-        if name == 'relu':
+    def _activation(self):
+        if self.activation == 'relu':
             return nn.ReLU()
-        elif name == 'tanh':
+        elif self.activation == 'tanh':
             return nn.Tanh()
-        elif name == 'sigmoid':
+        elif self.activation == 'sigmoid':
             return nn.Sigmoid()
-        elif name == 'leaky_relu':
+        elif self.activation == 'leaky_relu':
             return nn.LeakyReLU()
         else:
-            raise ValueError(f"Unsupported activation: {name}")
+            raise ValueError(f"Unsupported activation: {self.activation}")
     
     def forward(self, x):
         return self.model(x)
@@ -98,7 +106,7 @@ class DNN(nn.Module):
         grad_clip=False,
         ):
         """
-        Train model using SGD optimizer
+        Train model using SGD 
 
         Args:
             train_loader: DataLoader for training data
@@ -111,6 +119,7 @@ class DNN(nn.Module):
             verbose: whether to print training progress
             early_stopping: whether to use early stopping
             patience: number of epochs to wait for improvement before stopping
+            grad_clip: whether to use gradient clipping to prevent exploding gradients
         """
         train_losses, val_losses = [], []
         best_val_loss = float('inf')
@@ -127,7 +136,7 @@ class DNN(nn.Module):
                 y_pred = self.forward(X)    
                 train_loss = self.criterion(y_pred, y)
 
-                # L2 regularization
+                # Manual L2 regularization
                 if self.l2_lambda > 0:
                     l2_loss = 0
                     for param in self.parameters():
@@ -139,9 +148,11 @@ class DNN(nn.Module):
                 # Backward pass
                 train_loss.backward()
 
-                # Gradient clipping to prevent exploding gradients
+                # Gradient clipping to prevent exploding gradients (optional)
                 if grad_clip:
-                    torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=10.0)
+                    torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=5.0)
+
+                # Update weights
                 self.optimizer.step()
 
             train_loss = np.mean(batch_train_losses)
@@ -180,6 +191,15 @@ class DNN(nn.Module):
 
     @torch.no_grad()
     def predict(self, X):
+        """
+        Inference on test data
+
+        Args:
+            X: test data, shape: (n_samples, n_features)
+
+        Returns:
+            y_pred: predicted values, shape: (n_samples, 1)
+        """
         self.eval()
         with torch.no_grad():
             y_pred = self.forward(X)

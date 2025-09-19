@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
 import joblib
+import torch
 
 
 def load_scaler(file_path):
@@ -24,6 +25,8 @@ def test_model(model, X, y, is_scaled=False):
     print(f'R^2 Score: {r2:.4f}')
     print("="*40)
 
+    return mae, mse, r2
+
 def plot_loss(train_losses, val_losses, title='', save_path=None, log=False):
     plt.figure(figsize=(10, 6))
     plt.plot(train_losses, label='Train Loss')
@@ -36,10 +39,27 @@ def plot_loss(train_losses, val_losses, title='', save_path=None, log=False):
     if log:
         plt.yscale('log')
         plt.title(title + ' (Log Scale)')
-    plt.show()
+    plt.tight_layout()
 
     if save_path:
         plt.savefig(save_path)
+    # plt.close()
 
-def save_results(results, file_path):
-    pass
+def save_linear_regression(model, path):
+    joblib.dump(model, path)
+    print(f'Linear regression model saved to {path}')
+    return path
+
+def save_dnn(model, path, input_dim, hidden_layers, output_dim, extra_config=None):
+    ckpt = {
+        'model_state_dict': model.state_dict(),
+        'config': {
+            'input_dim': input_dim,
+            'hidden_layers': hidden_layers,
+            'output_dim': output_dim,
+            **(extra_config or {})
+        }
+    }
+    torch.save(ckpt, path)
+    print(f'DNN model saved to {path}')
+    return path

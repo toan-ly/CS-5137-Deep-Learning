@@ -2,6 +2,9 @@ import pandas as pd
 import torch
 
 def load_data(file_path):
+    """
+    Load original CSV data
+    """
     try:
         df = pd.read_csv(file_path)
         return df
@@ -11,6 +14,9 @@ def load_data(file_path):
         return df
 
 def load_processed_data(file_path):
+    """
+    Load data after preprocessing and split into train, val, test sets
+    """
     X_train = pd.read_csv(f'{file_path}/X_train.csv').values
     X_val = pd.read_csv(f'{file_path}/X_val.csv').values
     X_test = pd.read_csv(f'{file_path}/X_test.csv').values
