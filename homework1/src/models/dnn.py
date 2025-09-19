@@ -18,6 +18,7 @@ class DNN(nn.Module):
         l2_lambda: float = 0.0,
         activation='relu',
         weight_decay: float = 0.0,
+        momentum: float = 0.0,
     ):
         """
         Args:
@@ -51,7 +52,7 @@ class DNN(nn.Module):
         self._init_weights()
 
         self.criterion = nn.MSELoss()
-        self.optimizer = torch.optim.SGD(self.parameters(), lr=lr, weight_decay=weight_decay)
+        self.optimizer = torch.optim.SGD(self.parameters(), lr=lr, weight_decay=weight_decay, momentum=momentum)
         self.lr = lr
         self.l2_lambda = l2_lambda
 
