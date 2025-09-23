@@ -1,4 +1,3 @@
-from sklearn.preprocessing import StandardScaler
 from utils.evaluation import *
 from utils.load_data import load_processed_data
 from models.dnn import DNN
@@ -7,6 +6,14 @@ import torch
 from torch.utils.data import DataLoader, Dataset
 import time
 from pathlib import Path
+import numpy as np
+
+def set_seed(seed=42):
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+set_seed(42)
 
 class CustomDataset(Dataset):
     def __init__(self, X, y):
@@ -27,7 +34,23 @@ def pipeline(
         patience=40, 
         grad_clip=True, 
         title=None,
+        save_path=None,
 ):
+    """
+    Train, evaluate model and plot/save loss curve
+
+    Args:
+        model: model instance (DNN or Linear Regression)
+        epochs: number of training epochs
+        verbose: whether to print training progress
+        early_stopping: whether to use early stopping
+        patience: number of epochs to wait for improvement before stopping
+        grad_clip: whether to use gradient clipping to prevent exploding gradients
+        title: title for the loss plot
+        save_path: path to save the loss plot
+    Returns:
+        r2: R² score on the test set
+    """
     train_losses, val_losses = model.fit(
         train_loader, 
         val_loader, 
@@ -40,25 +63,33 @@ def pipeline(
     _, _, r2 = test_model(model, X_test, y_test)
     if title is None:
         title = f'{model.__class__.__name__}'
-    plot_loss(train_losses, val_losses, log=True, title=title)
+    plot_loss(train_losses, val_losses, log=True, title=title, save_path=save_path)
 
     return r2
 
+# --------------------- Paths -----------------------
 time_stamp = time.strftime("%Y%m%d")
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = ROOT / 'data' / 'processed'
 MODEL_ROOT = ROOT / 'weights'
+PLOT_ROOT = ROOT / 'figures'
+
 MODEL_ROOT.mkdir(parents=True, exist_ok=True)
+PLOT_ROOT.mkdir(parents=True, exist_ok=True)
+
+# --------------------- Load Data -----------------------
 data_path = str(DATA_DIR)
 X_train, X_val, X_test, y_train, y_val, y_test = load_processed_data(data_path)
 
+# Create DataLoaders
 batch_size = 64
 train_dataset = CustomDataset(X_train, y_train)
 val_dataset = CustomDataset(X_val, y_val)
 train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 
+# ---------------------- Hyperparameters ----------------------
 epochs = 500
 patience = 30
 early_stopping = True
@@ -80,12 +111,14 @@ architectures = {
     'DNN-Custom': [64, 32, 16, 8]
 }
 
+# ---------------------- Linear Regression ----------------------
 ln_reg = LinearRegressionSklearn()
 ln_reg.fit(X_train, y_train)
 _, _, r2 = test_model(ln_reg, X_test, y_test)
 save_linear_regression(ln_reg, path=MODEL_ROOT / f'{time_stamp}_linear_r2_{r2:.4f}.joblib')
 
 
+# ---------------------- Deep Neural Network ----------------------
 results = {}
 models = {}
 
@@ -102,7 +135,8 @@ dnn_16 = DNN(
     momentum=momentum,
 )
 models['DNN-16'] = dnn_16
-results['DNN-16'] = pipeline(dnn_16, epochs=epochs, early_stopping=early_stopping, patience=patience, title='DNN-16')
+save_path = PLOT_ROOT / f'{time_stamp}_DNN-16_loss.png'
+results['DNN-16'] = pipeline(dnn_16, epochs=epochs, early_stopping=early_stopping, patience=patience, title='DNN-16', save_path=save_path)
 
 
 dnn_30_8 = DNN(
@@ -118,7 +152,8 @@ dnn_30_8 = DNN(
     momentum=momentum,
 )
 models['DNN-30-8'] = dnn_30_8
-results['DNN-30-8'] = pipeline(dnn_30_8, epochs=epochs, early_stopping=early_stopping, patience=patience, title='DNN-30-8')
+save_path = PLOT_ROOT / f'{time_stamp}_DNN-30-8_loss.png'
+results['DNN-30-8'] = pipeline(dnn_30_8, epochs=epochs, early_stopping=early_stopping, patience=patience, title='DNN-30-8', save_path=save_path)
 
 dnn_30_16_8 = DNN(
     input_dim=X_train.shape[1],
@@ -133,7 +168,8 @@ dnn_30_16_8 = DNN(
     momentum=momentum,
 )
 models['DNN-30-16-8'] = dnn_30_16_8
-results['DNN-30-16-8'] = pipeline(dnn_30_16_8, epochs=epochs, early_stopping=early_stopping, patience=patience, title='DNN-30-16-8')
+save_path = PLOT_ROOT / f'{time_stamp}_DNN-30-16-8_loss.png'
+results['DNN-30-16-8'] = pipeline(dnn_30_16_8, epochs=epochs, early_stopping=early_stopping, patience=patience, title='DNN-30-16-8', save_path=save_path)
 
 dnn_30_16_8_4 = DNN(
     input_dim=X_train.shape[1],
@@ -148,7 +184,8 @@ dnn_30_16_8_4 = DNN(
     momentum=momentum,
 )
 models['DNN-30-16-8-4'] = dnn_30_16_8_4
-results['DNN-30-16-8-4'] = pipeline(dnn_30_16_8_4, epochs=epochs, early_stopping=early_stopping, patience=patience, title='DNN-30-16-8-4')
+save_path = PLOT_ROOT / f'{time_stamp}_DNN-30-16-8-4_loss.png'
+results['DNN-30-16-8-4'] = pipeline(dnn_30_16_8_4, epochs=epochs, early_stopping=early_stopping, patience=patience, title='DNN-30-16-8-4', save_path=save_path)
 
 custom_dnn = DNN(
     input_dim=X_train.shape[1],
@@ -163,8 +200,10 @@ custom_dnn = DNN(
     momentum=momentum,
 )
 models['Custom DNN'] = custom_dnn
-results['Custom DNN'] = pipeline(custom_dnn, epochs=epochs, early_stopping=early_stopping, patience=patience, title='Custom DNN')
+save_path = PLOT_ROOT / f'{time_stamp}_Custom_DNN_loss.png'
+results['Custom DNN'] = pipeline(custom_dnn, epochs=epochs, early_stopping=early_stopping, patience=patience, title='Custom DNN', save_path=save_path)
 
+# ---------------------- Save Best Model ----------------------
 best_model_name = max(results, key=results.get)
 best_r2 = results[best_model_name]
 best_model = models[best_model_name]
