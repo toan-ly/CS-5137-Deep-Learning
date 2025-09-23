@@ -5,10 +5,26 @@ import torch
 
 
 def load_scaler(file_path):
+    """
+    Load saved scaler if used for target variable
+    """
     scaler = joblib.load(file_path)
     return scaler
     
 def test_model(model, X, y, is_scaled=False):
+    """
+    Evaluate model on test set and print MAE, MSE, R² scores
+
+    Args:
+        model: trained model (DNN or Linear Regression)
+        X: test features, shape: (n_samples, n_features)
+        y: true target values, shape: (n_samples, 1)
+        is_scaled: whether the target values were scaled during training
+    Returns:
+        mae: Mean Absolute Error
+        mse: Mean Squared Error
+        r2: R² score
+    """
     if is_scaled:
         scaler = load_scaler('../models/y_scaler.pkl')
     print("\n=========== Model Evaluation ===========")
@@ -28,6 +44,16 @@ def test_model(model, X, y, is_scaled=False):
     return mae, mse, r2
 
 def plot_loss(train_losses, val_losses, title='', save_path=None, log=False):
+    """
+    Plot training and validation loss curves
+
+    Args:
+        train_losses: list of training losses
+        val_losses: list of validation losses
+        title: title of the plot
+        save_path: path to save the plot
+        log: whether to use logarithmic scale for y-axis
+    """
     plt.figure(figsize=(10, 6))
     plt.plot(train_losses, label='Train Loss')
     plt.plot(val_losses, label='Validation Loss')
@@ -38,7 +64,7 @@ def plot_loss(train_losses, val_losses, title='', save_path=None, log=False):
     plt.grid()
     if log:
         plt.yscale('log')
-        plt.title(title + ' (Log Scale)')
+        # plt.title(title + ' (Log Scale)')
     plt.tight_layout()
 
     if save_path:
@@ -46,11 +72,17 @@ def plot_loss(train_losses, val_losses, title='', save_path=None, log=False):
     # plt.close()
 
 def save_linear_regression(model, path):
+    """
+    Save linear regression model
+    """
     joblib.dump(model, path)
-    print(f'Linear regression model saved to {path}')
+    # print(f'Linear regression model saved to {path}')
     return path
 
 def save_dnn(model, path, input_dim, hidden_layers, output_dim, extra_config=None):
+    """
+    Save DNN model along with its configuration
+    """
     ckpt = {
         'model_state_dict': model.state_dict(),
         'config': {
@@ -61,5 +93,5 @@ def save_dnn(model, path, input_dim, hidden_layers, output_dim, extra_config=Non
         }
     }
     torch.save(ckpt, path)
-    print(f'DNN model saved to {path}')
+    # print(f'DNN model saved to {path}')
     return path

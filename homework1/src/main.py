@@ -1,3 +1,4 @@
+from unicodedata import name
 from utils.evaluation import *
 from utils.load_data import load_processed_data
 from models.dnn import DNN
@@ -7,6 +8,8 @@ from torch.utils.data import DataLoader, Dataset
 import time
 from pathlib import Path
 import numpy as np
+import pandas as pd
+import argparse
 
 def set_seed(seed=42):
     np.random.seed(seed)
@@ -83,20 +86,24 @@ data_path = str(DATA_DIR)
 X_train, X_val, X_test, y_train, y_val, y_test = load_processed_data(data_path)
 
 # Create DataLoaders
-batch_size = 64
+batch_size = 128
 train_dataset = CustomDataset(X_train, y_train)
 val_dataset = CustomDataset(X_val, y_val)
 train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 
 # ---------------------- Hyperparameters ----------------------
-epochs = 500
+parser = argparse.ArgumentParser()
+parser.add_argument('--lr', type=float, default=0.01, help='Learning rate')
+args = parser.parse_args()
+learning_rate = args.lr
+
+epochs = 1000
 patience = 30
 early_stopping = True
 grad_clip = True
 
 activation = 'leaky_relu'
-learning_rate = 0.01
 batch_norm = True
 dropout = 0.0
 l2_lambda = 0.0
@@ -108,107 +115,46 @@ architectures = {
     'DNN-30-8': [30, 8],
     'DNN-30-16-8': [30, 16, 8],
     'DNN-30-16-8-4': [30, 16, 8, 4],
-    'DNN-Custom': [64, 32, 16, 8]
+    # 'DNN-Custom': [64, 32, 16, 8]
 }
+
 
 # ---------------------- Linear Regression ----------------------
 ln_reg = LinearRegressionSklearn()
 ln_reg.fit(X_train, y_train)
-_, _, r2 = test_model(ln_reg, X_test, y_test)
-save_linear_regression(ln_reg, path=MODEL_ROOT / f'{time_stamp}_linear_r2_{r2:.4f}.joblib')
+_, _, r2_lr = test_model(ln_reg, X_test, y_test)
+save_linear_regression(ln_reg, path=MODEL_ROOT / f'{time_stamp}_{learning_rate}_linear_r2_{r2_lr:.4f}.joblib')
 
 
 # ---------------------- Deep Neural Network ----------------------
 results = {}
 models = {}
 
-dnn_16 = DNN(
-    input_dim=X_train.shape[1],
-    hidden_layers=architectures['DNN-16'],
-    output_dim=1,
-    lr=learning_rate,
-    dropout=dropout,
-    batch_norm=batch_norm,
-    l2_lambda=l2_lambda,
-    activation=activation, 
-    weight_decay=weight_decay,
-    momentum=momentum,
-)
-models['DNN-16'] = dnn_16
-save_path = PLOT_ROOT / f'{time_stamp}_DNN-16_loss.png'
-results['DNN-16'] = pipeline(dnn_16, epochs=epochs, early_stopping=early_stopping, patience=patience, title='DNN-16', save_path=save_path)
+for model_name, hidden_layers in architectures.items():
+    dnn = DNN(
+        input_dim=X_train.shape[1],
+        hidden_layers=hidden_layers,
+        output_dim=1,
+        lr=learning_rate,
+        dropout=dropout,
+        batch_norm=batch_norm,
+        l2_lambda=l2_lambda,
+        activation=activation, 
+        weight_decay=weight_decay,
+        momentum=momentum,
+    )
+    models[model_name] = dnn
+    print(f'\nTraining {model_name}...')
+    save_path = PLOT_ROOT / f'{time_stamp}_{learning_rate}_{model_name}_loss.png'
+    loss_plot_title = f'{model_name} (Layers: {hidden_layers}, LR: {learning_rate})'
+    results[model_name] = pipeline(dnn, epochs=epochs, early_stopping=early_stopping, patience=patience, title=loss_plot_title, save_path=save_path)
 
-
-dnn_30_8 = DNN(
-    input_dim=X_train.shape[1],
-    hidden_layers=architectures['DNN-30-8'],
-    output_dim=1,
-    lr=learning_rate,
-    dropout=dropout,
-    batch_norm=batch_norm,
-    l2_lambda=l2_lambda,
-    activation=activation,
-    weight_decay=weight_decay,
-    momentum=momentum,
-)
-models['DNN-30-8'] = dnn_30_8
-save_path = PLOT_ROOT / f'{time_stamp}_DNN-30-8_loss.png'
-results['DNN-30-8'] = pipeline(dnn_30_8, epochs=epochs, early_stopping=early_stopping, patience=patience, title='DNN-30-8', save_path=save_path)
-
-dnn_30_16_8 = DNN(
-    input_dim=X_train.shape[1],
-    hidden_layers=architectures['DNN-30-16-8'],
-    output_dim=1,
-    lr=learning_rate,
-    dropout=dropout,
-    batch_norm=batch_norm,
-    l2_lambda=l2_lambda,
-    activation=activation,
-    weight_decay=weight_decay,
-    momentum=momentum,
-)
-models['DNN-30-16-8'] = dnn_30_16_8
-save_path = PLOT_ROOT / f'{time_stamp}_DNN-30-16-8_loss.png'
-results['DNN-30-16-8'] = pipeline(dnn_30_16_8, epochs=epochs, early_stopping=early_stopping, patience=patience, title='DNN-30-16-8', save_path=save_path)
-
-dnn_30_16_8_4 = DNN(
-    input_dim=X_train.shape[1],
-    hidden_layers=architectures['DNN-30-16-8-4'],
-    output_dim=1,
-    lr=learning_rate,
-    dropout=dropout,
-    batch_norm=batch_norm,
-    l2_lambda=l2_lambda,
-    activation=activation,
-    weight_decay=weight_decay,
-    momentum=momentum,
-)
-models['DNN-30-16-8-4'] = dnn_30_16_8_4
-save_path = PLOT_ROOT / f'{time_stamp}_DNN-30-16-8-4_loss.png'
-results['DNN-30-16-8-4'] = pipeline(dnn_30_16_8_4, epochs=epochs, early_stopping=early_stopping, patience=patience, title='DNN-30-16-8-4', save_path=save_path)
-
-custom_dnn = DNN(
-    input_dim=X_train.shape[1],
-    hidden_layers=architectures['DNN-Custom'],
-    output_dim=1,
-    lr=learning_rate,
-    dropout=dropout,
-    batch_norm=batch_norm,
-    l2_lambda=l2_lambda,
-    activation=activation,
-    weight_decay=weight_decay,
-    momentum=momentum,
-)
-models['Custom DNN'] = custom_dnn
-save_path = PLOT_ROOT / f'{time_stamp}_Custom_DNN_loss.png'
-results['Custom DNN'] = pipeline(custom_dnn, epochs=epochs, early_stopping=early_stopping, patience=patience, title='Custom DNN', save_path=save_path)
-
-# ---------------------- Save Best Model ----------------------
+# ---------------------- Save Best Model -----------------
 best_model_name = max(results, key=results.get)
 best_r2 = results[best_model_name]
 best_model = models[best_model_name]
-print(f'Best model: {best_model_name} with R²: {best_r2:.4f}')
-save_path = MODEL_ROOT / f'{time_stamp}_{best_model_name}_r2_{best_r2:.4f}.pt'
+print(f'Best model: {best_model_name} with r2: {best_r2:.4f}')
+save_path = MODEL_ROOT / f'{time_stamp}_{learning_rate}_{best_model_name}_r2_{best_r2:.4f}.pt'
 save_dnn(
     best_model, 
     path=save_path, 
@@ -230,3 +176,17 @@ save_dnn(
     }
 )
 
+# ---------------------- Summary ----------------------
+summary = pd.DataFrame(
+    [{"model": "Linear Regression", "learning rate": learning_rate, "r2": r2_lr}] + 
+    [{"model": name, "learning rate": learning_rate, "r2": r2} for name, r2 in results.items()]
+).sort_values(by='r2', ascending=False)
+
+csv_path = PLOT_ROOT / 'model_performance_summary.csv'
+if csv_path.exists():
+    existing_summary = pd.read_csv(csv_path)
+    summary = pd.concat([existing_summary, summary]).sort_values(by='r2', ascending=False)
+else:
+    summary = summary.sort_values(by='r2', ascending=False)
+summary.to_csv(csv_path, index=False)
+print(f'Model performance summary saved to {csv_path}')

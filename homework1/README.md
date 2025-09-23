@@ -9,3 +9,11 @@
 ### 4. Disable early stopping, max r2 = 0.83
 
 ### 5. Use Sigmoid with init, max r2 = 0.835
+
+### 6. Use Leaky ReLU
+
+### 7. Enable early stopping for generalization
+
+### 8. Use momentum for slightly increased r2
+
+### 9. Use batch size 128, max r2 = 0.88
