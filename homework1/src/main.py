@@ -123,7 +123,7 @@ architectures = {
 ln_reg = LinearRegressionSklearn()
 ln_reg.fit(X_train, y_train)
 _, _, r2_lr = test_model(ln_reg, X_test, y_test)
-save_linear_regression(ln_reg, path=MODEL_ROOT / f'{time_stamp}_{learning_rate}_linear_r2_{r2_lr:.4f}.joblib')
+save_linear_regression(ln_reg, path=MODEL_ROOT / f'{time_stamp}_linear_r2_{r2_lr:.4f}.joblib')
 
 
 # ---------------------- Deep Neural Network ----------------------

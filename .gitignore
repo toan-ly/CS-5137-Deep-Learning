@@ -1,4 +1,7 @@
+homework1/weights/
 homework1/data/
+
+.DS_Store
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
