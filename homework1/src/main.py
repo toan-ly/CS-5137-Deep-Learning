@@ -71,6 +71,9 @@ def pipeline(
     return r2
 
 # --------------------- Paths -----------------------
+start_time = time.localtime()
+print(f'Start time: {time.strftime("%Y-%m-%d %H:%M:%S", start_time)}')
+
 time_stamp = time.strftime("%Y%m%d")
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -115,7 +118,8 @@ architectures = {
     'DNN-30-8': [30, 8],
     'DNN-30-16-8': [30, 16, 8],
     'DNN-30-16-8-4': [30, 16, 8, 4],
-    # 'DNN-Custom': [64, 32, 16, 8]
+    'DNN-64-30-16-8': [64, 30, 16, 8],
+    'DNN-128-64-32': [128, 64, 32],
 }
 
 
@@ -190,3 +194,7 @@ else:
     summary = summary.sort_values(by='r2', ascending=False)
 summary.to_csv(csv_path, index=False)
 print(f'Model performance summary saved to {csv_path}')
+
+end_time = time.localtime()
+print(f'End time: {time.strftime("%Y-%m-%d %H:%M:%S", end_time)}')
+print(f'Total time: {time.mktime(end_time) - time.mktime(start_time):.2f} seconds')
