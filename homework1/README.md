@@ -49,6 +49,14 @@ make clean
 
 Additionally, `src/utils/evaluation.py` includes `test_model()` to load model and evaluate on the test set
 
+### Notebooks:
+- `src/run_eda.ipynb`: notebook for Exploratory Data Analysis
+- `src/run_preprocessing.ipynb`: notebook for data preprocessing, this is where I generated `src/data/processed`
+- `src/run_linear_regression.ipynb`: notebook for training and evaluating linear regression with 3 versions
+- `src/run_dnn.ipynb`: notebook for training and evaluating all dnn models
+
+`src/main.py` is the main python script for this assignment
+
 ## Model Details
 ### Linear Regression (`src/models/linear_regression.py`)
 Although the python file contains 3 linear regression versions (sklearn, numpy, and PyTorch), I realized that numpy and torch versions required careful tuning for epochs and learning rates to be able to match sklearn performance. Therefore, I decided to use sklearn for further training and evaluation
