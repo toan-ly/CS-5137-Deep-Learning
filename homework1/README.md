@@ -43,7 +43,7 @@ make clean
 
 ## Folder structures
 - `data/`: dataset folder
-- `figures/`: folder to store loss curves, performance results, and training screenshots
+- `figures/`: folder to store loss curves, performance results, and training screenshots with timestamp
 - `weights/`: folder to store linear regression and best dnn weights
 - `src/`: main folder to store codes (model, train, and utilities) and jupyter notebooks for EDA, preprocessing and evaluation
 
