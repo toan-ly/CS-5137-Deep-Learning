@@ -18,20 +18,7 @@ data
 ```
 
 ## Environment setup
-
-### Option 1 - Using `uv`
-You can follow this [link](https://docs.astral.sh/uv/getting-started/installation/) to install `uv` package manager
-
-This project is run under `Python 3.11`. You can start with:
-```bash
-uv python 3.11
-uv init
-uv sync
-```
-
-### Option 2 - Using `requirements.txt`
-If prefer, you can use either `venv` or `conda` and install the dependencies:
-
+This project is run under `Python 3.11`. You can install dependencies by running this command:
 ```bash
 python -m venv .venv
 source .venv/bin/activate

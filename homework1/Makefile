@@ -6,7 +6,7 @@ run:
 	uv run python src/main.py --lr=$(lr)
 
 run-all:
-	$(MAKE) clean
+# 	$(MAKE) clean
 	$(MAKE) run lr=0.1
 	$(MAKE) run lr=0.01
 	$(MAKE) run lr=0.001
