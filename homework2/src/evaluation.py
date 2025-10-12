@@ -3,7 +3,8 @@ import numpy as np
 import torch
 import pandas as pd
 from pathlib import Path
-from utils import *
+from utils.plots import *
+
 
 
 if __name__ == "__main__":
