@@ -3,14 +3,14 @@ import torch.nn as nn
 
 class ResidualBlock(nn.Module):
     def __init__(
-        self, 
-        in_channels: int, 
-        out_channels: int, 
-        stride: int = 1, 
+        self,
+        in_channels: int,
+        out_channels: int,
+        stride: int = 1,
     ):
         super(ResidualBlock, self).__init__()
         self.conv1 = nn.Conv2d(
-            in_channels, out_channels, 
+            in_channels, out_channels,
             kernel_size=3, stride=stride, padding=1)
         self.bn1 = nn.BatchNorm2d(out_channels)
         self.conv2 = nn.Conv2d(
@@ -19,15 +19,15 @@ class ResidualBlock(nn.Module):
         self.bn2 = nn.BatchNorm2d(out_channels)
         self.relu = nn.ReLU()
 
-        self.proj = nn.Identity()
+        self.downsample = nn.Identity()
         if stride != 1 or in_channels != out_channels:
-            self.proj = nn.Sequential(
+            self.downsample = nn.Sequential(
                 # Force the feature maps to have the same shape
                 nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=stride),
                 nn.BatchNorm2d(out_channels)
             )
-        
-        self.conv_blocks = nn.Sequential(
+
+        self.conv_layers = nn.Sequential(
             self.conv1,
             self.bn1,
             self.relu,
@@ -36,8 +36,8 @@ class ResidualBlock(nn.Module):
         )
 
     def forward(self, x):
-        out = self.conv_blocks(x)
-        out += self.proj(x)  # Residual connection
+        out = self.conv_layers(x)
+        out += self.downsample(x)  # Residual connection
         out = self.relu(out)
         return out
 
@@ -92,12 +92,12 @@ class ResNet(nn.Module):
         out = self.flatten(out)
         out = self.fc(out)
         return out
-    
+
     def _make_layer(
-        self, 
-        in_channels: int, 
-        out_channels: int, 
-        n_blocks: int, 
+        self,
+        in_channels: int,
+        out_channels: int,
+        n_blocks: int,
         stride: int = 1
     ):
         """
