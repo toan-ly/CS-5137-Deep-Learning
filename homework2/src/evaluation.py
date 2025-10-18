@@ -12,8 +12,7 @@ if __name__ == "__main__":
     DATA_DIR = ROOT / 'data'
     RESULTS_DIR = ROOT / 'results'
 
-    loss_df = RESULTS_DIR / 'histories.csv'
-    history = pd.read_csv(loss_df)
+    history = pd.read_csv(RESULTS_DIR / 'histories.csv')
 
     plot_loss_by_lr(history, save_dir=RESULTS_DIR)
 

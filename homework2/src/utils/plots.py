@@ -47,6 +47,6 @@ def plot_loss_by_lr(loss_df, save_dir):
 
         plt.suptitle(f'{model} (lr={lr})', fontsize=16)
         plt.tight_layout()
-        plt.savefig(save_dir / f'{model}_lr{lr}.png')
+        plt.savefig(save_dir / f'{model}_{lr}.png')
         plt.close(fig)
 

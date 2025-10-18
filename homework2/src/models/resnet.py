@@ -19,15 +19,15 @@ class ResidualBlock(nn.Module):
         self.bn2 = nn.BatchNorm2d(out_channels)
         self.relu = nn.ReLU()
 
-        self.downsample = nn.Identity()
+        self.proj = nn.Identity()
         if stride != 1 or in_channels != out_channels:
-            self.downsample = nn.Sequential(
+            self.proj = nn.Sequential(
                 # Force the feature maps to have the same shape
                 nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=stride),
                 nn.BatchNorm2d(out_channels)
             )
         
-        self.conv_layers = nn.Sequential(
+        self.conv_blocks = nn.Sequential(
             self.conv1,
             self.bn1,
             self.relu,
@@ -36,8 +36,8 @@ class ResidualBlock(nn.Module):
         )
 
     def forward(self, x):
-        out = self.conv_layers(x)
-        out += self.downsample(x)  # Residual connection
+        out = self.conv_blocks(x)
+        out += self.proj(x)  # Residual connection
         out = self.relu(out)
         return out
 

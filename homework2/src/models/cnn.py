@@ -75,19 +75,14 @@ class CNN(nn.Module):
         x = x.view(x.size(0), -1) # Flatten
         x = self.fc(x)
         return x
-    
-    def _activation(self, act_str):
-        if act_str == 'relu':
-            return nn.ReLU()
-        elif act_str == 'tanh':
-            return nn.Tanh()
-        elif act_str == 'sigmoid':
-            return nn.Sigmoid()
-        elif act_str == 'leaky_relu':
-            return nn.LeakyReLU()
-        elif act_str == 'softmax':
-            return nn.Softmax(dim=1)
-        elif act_str == 'gelu':
-            return nn.GELU()
-        else:
-            raise ValueError(f"Unsupported activation function: {act_str}")
+
+    def _activation(self, act):
+        return {
+            'relu': nn.ReLU(),
+            'leaky_relu': nn.LeakyReLU(0.1),
+            'elu': nn.ELU(),
+            'gelu': nn.GELU(),
+            'tanh': nn.Tanh(),
+            'sigmoid': nn.Sigmoid(),
+            'silu': nn.SiLU(),
+        }.get(act, nn.ReLU())
