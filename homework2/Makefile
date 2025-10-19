@@ -6,7 +6,7 @@ WEIGHTS_DIR := weights
 RESULTS_DIR := results
 TEMP_DIR := .temp
 
-run: 
+eval: 
 	@echo "Running evaluation..."
 	$(PYTHON) src/evaluation.py
 
@@ -18,7 +18,7 @@ unzip: check_dirs
 	mv -f $(TEMP_DIR)/results/histories.csv $(RESULTS_DIR)/histories.csv
 	rm -rf $(TEMP_DIR)
 	rm -rf all_files.zip
-	@echo "🎉 Done!"
+	@echo "✅ Done!"
 
 check_dirs:
 	@mkdir -p $(DATA_DIR) $(WEIGHTS_DIR) $(RESULTS_DIR)
