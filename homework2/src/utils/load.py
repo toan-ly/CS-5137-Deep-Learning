@@ -3,6 +3,14 @@ from torch.utils.data import DataLoader, TensorDataset
 from torchvision import datasets, transforms
 
 def load_test_data(data_dir, batch_size=512, use_cached=True):
+    """
+    Load MNIST test data
+
+    Args:
+        data_dir: directory where data is stored
+        batch_size: batch size for DataLoader
+        use_cached: if True, load pre-saved tensors; else, load from torchvision datasets
+    """
     if use_cached:
         X = torch.load(f'{data_dir}/X_test.pt', map_location='cpu')
         y = torch.load(f'{data_dir}/y_test.pt', map_location='cpu')
@@ -14,6 +22,14 @@ def load_test_data(data_dir, batch_size=512, use_cached=True):
     return test_loader
 
 def load_model(model, model_path, device):
+    """
+    Load a model from a file and move it to the specified device.
+
+    Args:
+        model: the model instance to load the state dict into
+        model_path: path to the saved model file
+        device: cpu or cuda
+    """
     model.load_state_dict(torch.load(model_path, map_location=device))
     model.to(device)
     model.eval()

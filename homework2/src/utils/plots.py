@@ -6,6 +6,10 @@ from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
 
 def plot_loss_by_lr(loss_df, save_dir):
+    """
+    Plots training and validation loss, accuracy, and F1 score 
+    over epochs for different models and learning rates.
+    """
     save_dir = save_dir / 'loss_plots'
     save_dir.mkdir(parents=True, exist_ok=True)
 

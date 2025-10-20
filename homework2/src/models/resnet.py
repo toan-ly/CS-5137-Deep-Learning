@@ -8,6 +8,9 @@ class ResidualBlock(nn.Module):
         out_channels: int,
         stride: int = 1,
     ):
+        """
+        Residual block for ResNet.
+        """
         super(ResidualBlock, self).__init__()
         self.conv1 = nn.Conv2d(
             in_channels, out_channels,

@@ -10,6 +10,14 @@ class VGG(nn.Module):
         fc_layers: list = [128],
         dropout: float = 0.0,
     ):
+        """
+        Args:
+            input_channels: number of input channels (for MNIST, 1 channel for grayscale)
+            output_dim: number of output features (for MNIST, 10 classes)
+            batch_norm: whether to use batch normalization
+            fc_layers: list of fully connected layer sizes after feature extraction
+            dropout: dropout rate (0.0 means no dropout)
+        """
         super(VGG, self).__init__()
 
         self.vgg16_cfg = [
@@ -40,6 +48,14 @@ class VGG(nn.Module):
         return x
 
     def _make_layers(self, input_channels, cfg, batch_norm=True):
+        """
+        Create a sequence of convolutional and pooling layers based on the configuration.
+
+        Args:
+            input_channels: number of input channels
+            cfg: list specifying the number of filters or 'M' for max pooling
+            batch_norm: whether to include batch normalization layers
+        """
         blocks = []
         in_channels = input_channels
         for h in cfg:

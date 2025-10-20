@@ -62,6 +62,10 @@ def softmax(logits):
 def test_model(model, test_loader):
     """
     Evaluate the model on the test set
+
+    Args:
+        model: the trained model to evaluate
+        test_loader: DataLoader for the test dataset
     """
     model.eval()
     correct, total = 0, 0
