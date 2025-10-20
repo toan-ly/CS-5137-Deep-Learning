@@ -41,7 +41,7 @@ make run-all
 make clean
 ```
 
-## Folder structures
+## Folder structure
 - `data/`: dataset folder
 - `figures/`: folder to store loss curves, performance results, and training screenshots with timestamp
 - `weights/`: folder to store linear regression and best dnn weights
