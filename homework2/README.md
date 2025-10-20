@@ -33,6 +33,8 @@ This will load all trained models, run on the test set, and plot the results
 
 In `src/evaluation.py`, `test_model()` function loads the trained model and evaluate on the test set
 
+Additionally, the screenshots of iterations of models' training and testing with current timestamp are in `results/screenshots/`
+
 ### Notebooks:
 - `src/run_eda.ipynb`: notebook for Exploratory Data Analysis
 - `src/run_training.ipynb`: notebook for training and saving results
