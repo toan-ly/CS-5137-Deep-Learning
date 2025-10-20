@@ -23,7 +23,7 @@ batch_norm = True
 MODELS = {
     'DNN': DNN(
         input_dim=input_dim,
-        hidden_layers=[256, 128],
+        hidden_layers=[128, 64],
         output_dim=output_dim,
         dropout=dropout,
         batch_norm=batch_norm,
@@ -32,13 +32,13 @@ MODELS = {
     'CNN': CNN(
         input_channels=input_channels,
         conv_layers=[16, 32],
-        fc_layers=[256],
+        fc_layers=[64],
         output_dim=output_dim,
         dropout=dropout,
         batch_norm=batch_norm,
         activation=activation,
     ),
-    'ResNet19': ResNet(
+    'ResNet18': ResNet(
         input_channels=input_channels,
         n_blocks=[2, 2, 2, 2],
         output_dim=output_dim,
