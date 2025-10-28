@@ -24,6 +24,9 @@ class UNet(nn.Module):
             up_mode: upsampling mode, either 'transpose' for ConvTranspose2d or 'bilinear' for Upsample
         """
         super(UNet, self).__init__()
+        assert up_mode in ['transpose', 'bilinear'], "up_mode must be 'transpose' or 'bilinear'"
+        assert len(features) >= 2, "features must contain at least 1 encoder level and a bottleneck"
+
         self.activation = get_activation(activation)
 
         # Downsampling path / Encoder
@@ -50,16 +53,18 @@ class UNet(nn.Module):
 
         # Upsampling path / Decoder
         self.decoder = nn.ModuleList()
-        for i in range(len(features) - 1, 0, -1):
+        prev_c = features[-1]
+        for feature in reversed(features[:-1]):
             self.decoder.append(
                 UpBlock(
-                    in_channels=features[i + 1],
-                    out_channels=features[i],
+                    in_channels=prev_c,
+                    out_channels=feature,
                     activation=activation,
                     dropout=dropout,
                     up_mode=up_mode
                 )
             )
+            prev_c = feature
         self.final_conv = FinalOutput(features[0], n_classes)
 
     def forward(self, x):
@@ -75,3 +80,16 @@ class UNet(nn.Module):
             x = up(x, skip)
 
         return self.final_conv(x)
+
+
+if __name__ == "__main__":    
+    model = UNet(
+        n_channels=1, 
+        n_classes=2, 
+        features=[64, 128, 256, 512], 
+        activation='relu', 
+        dropout=0.0, 
+        up_mode='bilinear')
+    x = torch.randn((2, 1, 512, 512))
+    preds = model(x)
+    print(preds.shape)  # should be (2, 2, 512, 512)
