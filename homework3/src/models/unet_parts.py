@@ -88,7 +88,7 @@ class UpBlock(nn.Module):
         elif up_mode == 'bilinear':
             self.up_conv = nn.Sequential(
                 nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True),
-                # Use 1x1 conv to reduce the number of channels
+                # Use 1x1 conv to reduce the number of channels since bilinear doesn't change channels
                 nn.Conv2d(in_channels, in_channels // 2, kernel_size=1)
             )
         else:
@@ -102,21 +102,22 @@ class UpBlock(nn.Module):
         x = self.double_conv(x)
         return x
 
-    def _crop_and_concat(self, x, skip_connection):
+    def _crop_and_concat(self, x, skip):
         """
-        Crop skip_connection to match x's size and concatenate along channel dimension.
+        Crop skip to match x's size and concatenate along channel dimension.
         """
-        diff_y = skip_connection.size()[2] - x.size()[2] # height
-        diff_x = skip_connection.size()[3] - x.size()[3] # width
-        
+        diff_y = skip.size(2) - x.size(2) # height
+        diff_x = skip.size(3) - x.size(3) # width
+
         # I actually use padding here instead of cropping to avoid losing information
         x = F.pad(x, [diff_x // 2, diff_x - diff_x // 2,
                       diff_y // 2, diff_y - diff_y // 2])
-        return torch.cat([skip_connection, x], dim=1)
-    
+        return torch.cat([skip, x], dim=1)
+
 class FinalOutput(nn.Module):
     """
     Final output layer to map to desired number of classes.
+    It uses a 1x1 convolution.
     """
     def __init__(self, in_channels: int, out_channels: int):
         super(FinalOutput, self).__init__()

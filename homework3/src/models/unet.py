@@ -4,6 +4,9 @@ import torch.nn.functional as F
 
 from .unet_parts import *
 
+import warnings
+warnings.filterwarnings("ignore", category=RuntimeWarning, module="runpy")
+
 class UNet(nn.Module):
     def __init__(
         self,
@@ -83,13 +86,21 @@ class UNet(nn.Module):
 
 
 if __name__ == "__main__":    
-    model = UNet(
+    x = torch.randn((2, 1, 512, 512))
+    preds = UNet(
         n_channels=1, 
         n_classes=2, 
         features=[64, 128, 256, 512], 
         activation='relu', 
         dropout=0.0, 
-        up_mode='bilinear')
-    x = torch.randn((2, 1, 512, 512))
-    preds = model(x)
-    print(preds.shape)  # should be (2, 2, 512, 512)
+        up_mode='bilinear')(x)
+    assert preds.shape == (2, 2, 512, 512)
+
+    preds = UNet(
+        n_channels=1, 
+        n_classes=2, 
+        features=[64, 128, 256, 512, 1024], 
+        activation='leaky_relu', 
+        dropout=0.3, 
+        up_mode='transpose')(x)
+    assert preds.shape == (2, 2, 512, 512)
