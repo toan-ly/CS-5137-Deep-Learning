@@ -60,7 +60,7 @@ class Trainer:
         self.model.train()
         epoch_loss = 0.0
         dices, ious = [], []
-        for batch in tqdm.tqdm(self.train_loader, desc="Training", leave=False):
+        for batch in tqdm(self.train_loader, desc="Training", leave=False):
             imgs = batch['image'].to(self.device)
             masks = batch['mask'].to(self.device)
 
@@ -86,7 +86,7 @@ class Trainer:
         self.model.eval()
         epoch_loss = 0.0
         dices, ious = [], []
-        for batch in tqdm.tqdm(self.val_loader, desc="Validation", leave=False):
+        for batch in tqdm(self.val_loader, desc="Validation", leave=False):
             imgs = batch['image'].to(self.device)
             masks = batch['mask'].to(self.device)
 
@@ -199,7 +199,7 @@ class Trainer:
     def test(self):
         self.model.eval()
         dices, ious = [], []
-        for batch in tqdm.tqdm(self.test_loader, desc="Testing", leave=False):
+        for batch in tqdm(self.test_loader, desc="Testing", leave=False):
             imgs = batch['image'].to(self.device)
             masks = batch['mask'].to(self.device)
 
