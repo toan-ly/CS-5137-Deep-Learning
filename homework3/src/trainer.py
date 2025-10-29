@@ -44,11 +44,10 @@ class Trainer:
         
         # Early stopping
         self.early_stopping = early_stopping
-        if early_stopping:
-            self.early_stopping_patience = early_stopping_patience
-            self.best_metric = -float('inf')
-            self.epochs_no_improve = 0
-            self.best_weights = None
+        self.early_stopping_patience = early_stopping_patience
+        self.best_metric = -float('inf')
+        self.epochs_no_improve = 0
+        self.best_weights = None
 
         self.checkpoint = {
             'train_loss': [],
@@ -131,13 +130,15 @@ class Trainer:
                     self.epochs_no_improve += 1
                     if self.epochs_no_improve >= self.early_stopping_patience:
                         print("=> Early stopping at epoch", epoch+1)
+                        if self.best_weights is not None:
+                            self.model.load_state_dict(self.best_weights)
                         break
 
             if self.scheduler:
                 self.scheduler.step()
 
         # Load best weights
-        if self.early_stopping and self.best_weights is not None:
+        if self.best_weights is not None:
             self.model.load_state_dict(self.best_weights)
 
         total_time = time.time() - start_time
