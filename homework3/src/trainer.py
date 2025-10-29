@@ -203,6 +203,7 @@ class Trainer:
         masks = torch.cat(masks, dim=0)[:num_samples]
         preds = torch.cat(preds, dim=0)[:num_samples]
 
+        plt.rcParams['figure.figsize'] = [12, 4 * num_samples]
         fig, axes = plt.subplots(num_samples, 3, figsize=(12, 4 * num_samples))
         for i in range(num_samples):
             img = imgs[i].permute(1, 2, 0).numpy()
@@ -224,6 +225,6 @@ class Trainer:
         if save_path:
             save_path = os.path.join(save_path, f'epoch_{epoch+1}.png')
             plt.savefig(save_path)
-        plt.show()
+        plt.show(block=False)
         plt.close(fig)
       
