@@ -33,7 +33,7 @@ def parse_args():
     ap.add_argument("--loss", choices=["bce","dice","bce_dice"], default="bce_dice")
 
     # Trainer features
-    ap.add_argument("--early_stopping", action="store_true")
+    ap.add_argument("--early_stopping", default=True)
     ap.add_argument("--early_stopping_patience", type=int, default=10)
     ap.add_argument("--activation", choices=["relu","leaky_relu","elu"], default="relu")
     ap.add_argument("--up_mode", choices=["transpose","bilinear"], default="transpose")

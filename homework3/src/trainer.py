@@ -119,7 +119,7 @@ class Trainer:
                 print(f'Epoch {epoch+1}/{epochs} - '
                       f'Train Loss: {train_loss:.4f}, Train Dice: {train_dice:.4f}, Train IoU: {train_iou:.4f} | '
                       f'Val Loss: {val_loss:.4f}, Val Dice: {val_dice:.4f}, Val IoU: {val_iou:.4f}')
-                self._visualize(num_samples=2, save_path=save_plots_path, epoch=epoch)
+                self._visualize(num_samples=3, save_path=save_plots_path, epoch=epoch)
 
             # Early stopping
             if self.early_stopping:
@@ -203,8 +203,7 @@ class Trainer:
         masks = torch.cat(masks, dim=0)[:num_samples]
         preds = torch.cat(preds, dim=0)[:num_samples]
 
-        plt.rcParams['figure.figsize'] = [12, 4 * num_samples]
-        fig, axes = plt.subplots(num_samples, 3, figsize=(12, 4 * num_samples))
+        fig, axes = plt.subplots(num_samples, 3, figsize=())
         for i in range(num_samples):
             img = imgs[i].permute(1, 2, 0).numpy()
             if img.max() > 1:
