@@ -222,7 +222,6 @@ class Trainer:
 
         plt.tight_layout()
         if save_path:
-            os.makedirs(save_path, exist_ok=True)
             save_path = os.path.join(save_path, f'epoch_{epoch+1}.png')
             plt.savefig(save_path)
         plt.show()
