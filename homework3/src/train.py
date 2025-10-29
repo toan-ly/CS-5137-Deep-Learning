@@ -55,6 +55,7 @@ def main():
     device = get_device(args.device)
 
     os.makedirs(args.save_dir, exist_ok=True)
+    os.makedirs(args.save_plots_path, exist_ok=True)
 
     train_loader, val_loader = make_loaders(
         data_root=args.data_root,
