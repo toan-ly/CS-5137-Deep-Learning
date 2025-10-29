@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import numpy as np
-import tqdm
+from tqdm.auto import tqdm
 from monai.losses import DiceLoss
 import matplotlib.pyplot as plt
 from PIL import Image
@@ -104,7 +104,7 @@ class Trainer:
         return epoch_loss, np.mean(dices), np.mean(ious)
 
     @torch.no_grad()
-    def visualize(self, save_path=None, num_samples=3):
+    def visualize(self, epoch, save_path=None, num_samples=3):
         self.model.eval()
         imgs, masks, preds = [], [], []
         for batch in self.val_loader:
@@ -146,10 +146,10 @@ class Trainer:
 
         plt.tight_layout()
         if save_path:
-            plt.savefig(save_path)
+            plt.savefig(f'{save_path}/epoch_{epoch+1}.png')
         plt.show()
 
-    def fit(self, epochs=10, verbose=True, save_model_path=None):
+    def fit(self, epochs=10, verbose=True, save_model_path=None, save_plots_path=None):
         start_time = time.time()
         for epoch in range(epochs):
             train_loss, train_dice, train_iou = self.train_one_epoch()
@@ -164,7 +164,7 @@ class Trainer:
                 print(f'Epoch {epoch+1}/{epochs} - '
                       f'Train Loss: {train_loss:.4f}, Train Dice: {train_dice:.4f}, Train IoU: {train_iou:.4f} | '
                       f'Val Loss: {val_loss:.4f}, Val Dice: {val_dice:.4f}, Val IoU: {val_iou:.4f}')
-                self.visualize(num_samples=2)
+                self.visualize(num_samples=2, save_path=save_plots_path, epoch=epoch)
 
             # Early stopping
             if self.early_stopping:

@@ -3,7 +3,7 @@ import os
 import argparse
 import torch
 import torch.nn as nn
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 from src.data import make_loaders, make_test_loader
 from src.models import UNet
@@ -43,6 +43,7 @@ def parse_args():
 
     # I/O
     ap.add_argument("--save_dir", default="checkpoints")
+    ap.add_argument("--save_plots_path", default="results/predictions")
     ap.add_argument("--save_final", action="store_true", help="also save final weights")
     ap.add_argument("--device", default=None, help="force device, e.g., 'cuda'|'mps'|'cpu'")
     ap.add_argument("--metrics_csv", default=None, help="optional CSV to append metrics per epoch")
@@ -92,6 +93,7 @@ def main():
     history = trainer.fit(
         epochs=args.epochs,
         save_model_path=os.path.join(args.save_dir, "best_model.pth"),
+        save_plots_path=args.save_plots_path,
         verbose=True,
     )
 
