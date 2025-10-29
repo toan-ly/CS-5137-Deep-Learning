@@ -29,7 +29,6 @@ def split_data(pairs, val_ratio=0.2, seed=42):
 def make_loaders(
     data_root,
     im_size=512,
-    normalize=True,
     batch_size=4,
     num_workers=2,
     cache_rate=0.0,
@@ -43,8 +42,8 @@ def make_loaders(
     train_data = collect_pairs(train_root)
     train_data, val_data = split_data(train_data, val_ratio, seed)
 
-    train_transforms = get_transforms(im_size, normalize, is_train=True)
-    val_transforms = get_transforms(im_size, normalize, is_train=False)
+    train_transforms = get_transforms(im_size, is_train=True)
+    val_transforms = get_transforms(im_size, is_train=False)
 
     if cache_rate > 0:
         train_ds = CacheDataset(data=train_data, transform=train_transforms, cache_rate=cache_rate, num_workers=num_workers)

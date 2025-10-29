@@ -7,27 +7,22 @@ from monai.transforms import (
 
 def get_transforms(
     im_size=512,
-    normalize=True,
     is_train=True
 ):
     keys = ['image', 'mask']
     transforms = [
         LoadImageD(keys=keys),
         EnsureChannelFirstD(keys=keys),
-        ResizeD(keys=keys, spatial_size=(im_size, im_size), mode=("bilinear", "nearest"))
+        ResizeD(keys=keys, spatial_size=(im_size, im_size), mode=("bilinear", "nearest")),
+        ScaleIntensityRangeD(
+            keys=['image'],
+            a_min=0,
+            a_max=255,
+            b_min=0.0,
+            b_max=1.0,
+            clip=True
+        ),
     ]
-    
-    if normalize:
-        transforms += [
-            ScaleIntensityRangeD(
-                keys=['image'],
-                a_min=0,
-                a_max=255,
-                b_min=0.0,
-                b_max=1.0,
-                clip=True
-            )
-        ]
     
     if is_train:
         transforms += [

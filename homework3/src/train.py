@@ -7,16 +7,17 @@ from src.models import UNet
 from src.utils import *
 from src.trainer import Trainer
 
+import pandas as pd
+
 def parse_args():
     ap = argparse.ArgumentParser("Training script")
 
     # Data
     ap.add_argument("--data_root", required=True, help="dataset_root with train/ and test/")
     ap.add_argument("--img_size", type=int, default=512)
-    ap.add_argument("--normalize", action="store_true", help="apply ScaleIntensityRange to images")
-    ap.add_argument("--seed", type=int, default=42)
+    ap.add_argument("--seed", type=int, default=2025)
     ap.add_argument("--batch_size", type=int, default=4)
-    ap.add_argument("--num_workers", type=int, default=2)
+    ap.add_argument("--num_workers", type=int, default=0)
     ap.add_argument("--cache_rate", type=float, default=0.0, help="MONAI CacheDataset rate (0..1)")
 
     # Model
@@ -41,7 +42,6 @@ def parse_args():
     # I/O
     ap.add_argument("--save_dir", default="checkpoints")
     ap.add_argument("--save_plots_path", default="results/predictions")
-    ap.add_argument("--save_final", action="store_true", help="also save final weights")
     ap.add_argument("--device", default=None, help="force device, e.g., 'cuda'|'mps'|'cpu'")
     ap.add_argument("--metrics_csv", default=None, help="optional CSV to append metrics per epoch")
     return ap.parse_args()
@@ -57,7 +57,6 @@ def main():
     train_loader, val_loader = make_loaders(
         data_root=args.data_root,
         im_size=args.img_size,
-        normalize=args.normalize,
         batch_size=args.batch_size,
         num_workers=args.num_workers,
         cache_rate=args.cache_rate,
@@ -94,6 +93,9 @@ def main():
         save_plots_path=args.save_plots_path,
         verbose=True,
     )
+
+    history_df = pd.DataFrame(history)
+    history_df.to_csv(os.path.join(args.save_dir, "training_history.csv"), index=False)
 
 
 if __name__=='__main__':
