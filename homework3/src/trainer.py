@@ -26,6 +26,7 @@ class Trainer:
         test_loader,
         device,
         loss='bce_dice',
+        optimizer_name='adam',
         lr=0.001,
         early_stopping=True,
         early_stopping_patience=3,
@@ -37,7 +38,7 @@ class Trainer:
         self.val_loader = val_loader
         self.test_loader = test_loader
         self.criterion = self._get_loss(loss)
-        self.optimizer = optim.Adam(self.model.parameters(), lr=lr, weight_decay=1e-4)
+        self.optimizer = self._get_optimizer(optimizer_name, lr)
         self.scheduler = None
         if scheduler:
             self.scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=10, gamma=0.1)
@@ -45,13 +46,15 @@ class Trainer:
         # Early stopping
         self.early_stopping = early_stopping
         self.early_stopping_patience = early_stopping_patience
-        # self.best_metric = -float('inf')
-        self.best_metric = float('inf')
+        self.best_metric = -float('inf')
+        # self.best_metric = float('inf')
         self.epochs_no_improve = 0
         self.best_weights = None
 
         self.checkpoint = {
             'train_loss': [],
+            'train_dice': [],
+            'train_iou': [],
             'val_loss': [],
             'val_dice': [],
             'val_iou': [],
@@ -113,6 +116,8 @@ class Trainer:
             val_loss, val_dice, val_iou = self.validate(epoch, epochs)
 
             self.checkpoint['train_loss'].append(train_loss)
+            self.checkpoint['train_dice'].append(train_dice)
+            self.checkpoint['train_iou'].append(train_iou)
             self.checkpoint['val_loss'].append(val_loss)
             self.checkpoint['val_dice'].append(val_dice)
             self.checkpoint['val_iou'].append(val_iou)
@@ -125,10 +130,10 @@ class Trainer:
 
             # Early stopping
             if self.early_stopping:
-                # if val_dice > self.best_metric:
-                if val_loss < self.best_metric:
-                    # self.best_metric = val_dice
-                    self.best_metric = val_loss
+                if val_dice > self.best_metric:
+                # if val_loss < self.best_metric:
+                    self.best_metric = val_dice
+                    # self.best_metric = val_loss
                     self.epochs_no_improve = 0
                     self.best_weights = self.model.state_dict()
                 else:
@@ -248,3 +253,11 @@ class Trainer:
         iou = intersection / (sum_preds_targets - intersection + eps)
         return dice.item(), iou.item()
       
+    def _get_optimizer(self, optim_name, lr):
+        if optim_name == 'adam':
+            return optim.Adam(self.model.parameters(), lr=lr)
+        if optim_name == 'adamw':
+            return optim.AdamW(self.model.parameters(), lr=lr)
+        if optim_name == 'sgd':
+            return optim.SGD(self.model.parameters(), lr=lr, momentum=0.9)
+        raise ValueError(f'Unknown optimizer: {optim_name}')

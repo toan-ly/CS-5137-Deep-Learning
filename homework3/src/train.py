@@ -32,6 +32,8 @@ def parse_args():
     ap.add_argument("--lr", type=float, default=1e-3)
     ap.add_argument("--weight_decay", type=float, default=1e-4)
     ap.add_argument("--loss", choices=["bce","dice","bce_dice"], default="bce_dice")
+    ap.add_argument("--scheduler", choices=["step","plateau","none"], default="step")
+    ap.add_argument("--optimizer", choices=["adam","adamw","sgd"], default="adamw")
 
     # Trainer features
     ap.add_argument("--early_stopping", default=True)
@@ -95,7 +97,8 @@ def main():
     )
 
     history_df = pd.DataFrame(history)
-    history_df.to_csv(os.path.join(args.save_dir, "training_history.csv"), index=False)
+    history_df.index.name = 'epoch'
+    history_df.to_csv(os.path.join(args.save_dir, "training_history.csv"))
 
 
 if __name__=='__main__':
