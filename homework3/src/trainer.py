@@ -104,53 +104,6 @@ class Trainer:
         epoch_loss = epoch_loss / len(self.val_loader.dataset)
         return epoch_loss, np.mean(dices), np.mean(ious)
 
-    @torch.no_grad()
-    def visualize(self, epoch, save_path=None, num_samples=3):
-        self.model.eval()
-        imgs, masks, preds = [], [], []
-        for batch in self.val_loader:
-            img = batch['image'].to(self.device)
-            mask = batch['mask'].to(self.device)
-
-            with torch.no_grad():
-                output = self.model(img)
-                prob = torch.sigmoid(output)
-                pred = (prob > 0.5).float()
-
-            imgs.append(img.cpu())
-            masks.append(mask.cpu())
-            preds.append(pred.cpu())
-
-            if len(imgs) * img.size(0) >= num_samples:
-                break
-    
-        imgs = torch.cat(imgs, dim=0)[:num_samples]
-        masks = torch.cat(masks, dim=0)[:num_samples]
-        preds = torch.cat(preds, dim=0)[:num_samples]
-
-        fig, axes = plt.subplots(num_samples, 3, figsize=(12, 4 * num_samples))
-        for i in range(num_samples):
-            img = imgs[i].permute(1, 2, 0).numpy()
-            if img.max() > 1:
-                img = img / 255.0  # Normalize for visualization
-            axes[i, 0].imshow(img)
-            axes[i, 0].set_title('Input Image')
-            axes[i, 0].axis('off')
-
-            axes[i, 1].imshow(masks[i].squeeze(), cmap='gray')
-            axes[i, 1].set_title('Ground Truth')
-            axes[i, 1].axis('off')
-
-            axes[i, 2].imshow(preds[i].squeeze(), cmap='gray')
-            axes[i, 2].set_title('Prediction')
-            axes[i, 2].axis('off')
-
-        plt.tight_layout()
-        if save_path:
-            os.makedirs(save_path, exist_ok=True)
-            plt.savefig(f'{save_path}/epoch_{epoch+1}.png')
-        plt.show()
-
     def fit(self, epochs=10, verbose=True, save_model_path=None, save_plots_path=None):
         start_time = time.time()
         for epoch in range(epochs):
@@ -166,7 +119,7 @@ class Trainer:
                 print(f'Epoch {epoch+1}/{epochs} - '
                       f'Train Loss: {train_loss:.4f}, Train Dice: {train_dice:.4f}, Train IoU: {train_iou:.4f} | '
                       f'Val Loss: {val_loss:.4f}, Val Dice: {val_dice:.4f}, Val IoU: {val_iou:.4f}')
-                self.visualize(num_samples=2, save_path=save_plots_path, epoch=epoch)
+                self._visualize(num_samples=2, save_path=save_plots_path, epoch=epoch)
 
             # Early stopping
             if self.early_stopping:
@@ -226,4 +179,51 @@ class Trainer:
             return lambda pred, target: 0.5 * bce(pred, target) + 0.5 * dice(pred, target)
         raise ValueError(f'Unknown loss function: {loss_name}')
 
+    @torch.no_grad()
+    def _visualize(self, epoch, save_path=None, num_samples=3):
+        self.model.eval()
+        imgs, masks, preds = [], [], []
+        for batch in self.val_loader:
+            img = batch['image'].to(self.device)
+            mask = batch['mask'].to(self.device)
+
+            with torch.no_grad():
+                output = self.model(img)
+                prob = torch.sigmoid(output)
+                pred = (prob > 0.5).float()
+
+            imgs.append(img.cpu())
+            masks.append(mask.cpu())
+            preds.append(pred.cpu())
+
+            if len(imgs) * img.size(0) >= num_samples:
+                break
+    
+        imgs = torch.cat(imgs, dim=0)[:num_samples]
+        masks = torch.cat(masks, dim=0)[:num_samples]
+        preds = torch.cat(preds, dim=0)[:num_samples]
+
+        fig, axes = plt.subplots(num_samples, 3, figsize=(12, 4 * num_samples))
+        for i in range(num_samples):
+            img = imgs[i].permute(1, 2, 0).numpy()
+            if img.max() > 1:
+                img = img / 255.0  # Normalize for visualization
+            axes[i, 0].imshow(img)
+            axes[i, 0].set_title('Input Image')
+            axes[i, 0].axis('off')
+
+            axes[i, 1].imshow(masks[i].squeeze(), cmap='gray')
+            axes[i, 1].set_title('Ground Truth')
+            axes[i, 1].axis('off')
+
+            axes[i, 2].imshow(preds[i].squeeze(), cmap='gray')
+            axes[i, 2].set_title('Prediction')
+            axes[i, 2].axis('off')
+
+        plt.tight_layout()
+        if save_path:
+            os.makedirs(save_path, exist_ok=True)
+            save_path = os.path.join(save_path, f'epoch_{epoch+1}.png')
+            plt.savefig(save_path)
+        plt.show()
       

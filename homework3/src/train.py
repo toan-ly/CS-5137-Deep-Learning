@@ -1,13 +1,10 @@
 
 import os
 import argparse
-import torch
-import torch.nn as nn
-from tqdm.auto import tqdm
 
 from src.data import make_loaders, make_test_loader
 from src.models import UNet
-from src.utils import set_seed, save_checkpoint, load_checkpoint, binarize, get_device
+from src.utils import *
 from src.trainer import Trainer
 
 def parse_args():
