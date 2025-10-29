@@ -7,6 +7,7 @@ from tqdm.auto import tqdm
 from monai.losses import DiceLoss
 import matplotlib.pyplot as plt
 from PIL import Image
+import os
 
 def compute_dice_iou(preds, targets):
     eps = 1e-7
@@ -146,6 +147,7 @@ class Trainer:
 
         plt.tight_layout()
         if save_path:
+            os.makedirs(save_path, exist_ok=True)
             plt.savefig(f'{save_path}/epoch_{epoch+1}.png')
         plt.show()
 
