@@ -1,7 +1,7 @@
 from monai.transforms import (
     LoadImageD, EnsureChannelFirstD, Compose, ResizeD,
     ScaleIntensityRangeD, RandFlipD, RandRotateD,
-    RandZoomD, EnsureTypedD, AsDiscreteD, ToTensorD,
+    RandZoomD, EnsureTypeD, AsDiscreteD, ToTensorD,
     RandAdjustContrastD
 )
 
@@ -39,7 +39,7 @@ def get_transforms(
         ]
     
     transforms += [
-        EnsureTypedD(keys=keys),
+        EnsureTypeD(keys=keys),
         AsDiscreteD(keys=['mask'], threshold=0.5),
         # ToTensorD(keys=keys),
     ]

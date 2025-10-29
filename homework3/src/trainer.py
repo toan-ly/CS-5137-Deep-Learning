@@ -127,10 +127,12 @@ class Trainer:
         masks = torch.cat(masks, dim=0)[:num_samples]
         preds = torch.cat(preds, dim=0)[:num_samples]
 
-        # Plot each prediction with 3 columns: Image, Ground Truth, Prediction
         fig, axes = plt.subplots(num_samples, 3, figsize=(12, 4 * num_samples))
         for i in range(num_samples):
-            axes[i, 0].imshow(imgs[i].permute(1, 2, 0).numpy())
+            img = imgs[i].permute(1, 2, 0).numpy()
+            if img.max() > 1:
+                img = img / 255.0  # Normalize for visualization
+            axes[i, 0].imshow(img)
             axes[i, 0].set_title('Input Image')
             axes[i, 0].axis('off')
 

@@ -1,5 +1,8 @@
 
-import os, argparse, torch, torch.nn as nn
+import os
+import argparse
+import torch
+import torch.nn as nn
 from tqdm import tqdm
 
 from src.data import make_loaders, make_test_loader
