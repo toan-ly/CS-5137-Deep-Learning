@@ -2,7 +2,7 @@ from monai.transforms import (
     LoadImageD, EnsureChannelFirstD, Compose, ResizeD,
     ScaleIntensityRangeD, RandFlipD, RandRotateD, RandRotate90D,
     RandZoomD, EnsureTypeD, AsDiscreteD, ToTensorD,
-    RandAdjustContrastD, RandElasticD, RandScaleIntensityD,
+    RandAdjustContrastD, RandScaleIntensityD,
     RandShiftIntensityD, RandHistogramShiftD, RandGaussianNoiseD,
     RandGaussianSmoothD, RandBiasFieldD,
 )
@@ -30,13 +30,13 @@ def get_transforms(
             # Zoom
             RandZoomD(keys=keys, min_zoom=0.9, max_zoom=1.1, prob=0.3, mode=('bilinear','nearest')),
 
-            RandElasticD(
-                keys=keys,
-                prob=0.15,
-                sigma_range=(2, 5),
-                magnitude_range=(0.5, 1.5),
-                mode=('bilinear','nearest'),
-            ),
+            # RandElasticD(
+            #     keys=keys,
+            #     prob=0.15,
+            #     sigma_range=(2, 5),
+            #     magnitude_range=(0.5, 1.5),
+            #     mode=('bilinear','nearest'),
+            # ),
 
             RandScaleIntensityD(keys=["image"], factors=0.1, prob=0.3),   # +/-10%
             RandShiftIntensityD(keys=["image"], offsets=0.1, prob=0.3),   # shift by 0.1
