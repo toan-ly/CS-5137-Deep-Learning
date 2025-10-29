@@ -97,7 +97,7 @@ def main():
     )
 
     history_df = pd.DataFrame(history)
-    history_df.index.name = 'epoch'
+    history_df['epoch'] = history_df.index + 1
     history_df.to_csv(os.path.join(args.save_dir, "training_history.csv"))
 
 
