@@ -45,7 +45,8 @@ class Trainer:
         # Early stopping
         self.early_stopping = early_stopping
         self.early_stopping_patience = early_stopping_patience
-        self.best_metric = -float('inf')
+        # self.best_metric = -float('inf')
+        self.best_metric = float('inf')
         self.epochs_no_improve = 0
         self.best_weights = None
 
@@ -122,8 +123,10 @@ class Trainer:
 
             # Early stopping
             if self.early_stopping:
-                if val_dice > self.best_metric:
-                    self.best_metric = val_dice
+                # if val_dice > self.best_metric:
+                if val_loss < self.best_metric:
+                    # self.best_metric = val_dice
+                    self.best_metric = val_loss
                     self.epochs_no_improve = 0
                     self.best_weights = self.model.state_dict()
                 else:
@@ -210,6 +213,11 @@ class Trainer:
             img = imgs[i].permute(1, 2, 0).numpy()
             if img.max() > 1:
                 img = img / 255.0  # Normalize for visualization
+
+            pred = preds[i].squeeze().numpy()
+            mask = masks[i].squeeze().numpy()
+            dice, iou = compute_dice_iou(pred, mask)
+
             axes[i, 0].imshow(img)
             axes[i, 0].set_title('Input Image')
             axes[i, 0].axis('off')
@@ -219,9 +227,10 @@ class Trainer:
             axes[i, 1].axis('off')
 
             axes[i, 2].imshow(preds[i].squeeze(), cmap='gray')
-            axes[i, 2].set_title('Prediction')
+            axes[i, 2].set_title(f'Prediction\nDice: {dice:.2f}, IoU: {iou:.2f}')
             axes[i, 2].axis('off')
 
+        plt.suptitle(f'Epoch {epoch+1}')
         plt.tight_layout()
         if save_path:
             save_path = os.path.join(save_path, f'epoch_{epoch+1}.png')
