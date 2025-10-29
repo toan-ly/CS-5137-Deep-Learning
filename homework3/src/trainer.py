@@ -57,11 +57,12 @@ class Trainer:
             'val_iou': [],
         }
 
-    def train_one_epoch(self):
+    def train_one_epoch(self, epoch, epochs):
         self.model.train()
         epoch_loss = 0.0
         dices, ious = [], []
-        for batch in tqdm(self.train_loader, desc="Training", leave=False):
+        desc = f"Epoch [{epoch+1}/{epochs}] Training"
+        for batch in tqdm(self.train_loader, desc=desc, leave=False):
             imgs = batch['image'].to(self.device)
             masks = batch['mask'].to(self.device)
 
@@ -83,11 +84,12 @@ class Trainer:
         return epoch_loss, np.mean(dices), np.mean(ious)
     
     @torch.no_grad()
-    def validate(self):
+    def validate(self, epoch, epochs):
         self.model.eval()
         epoch_loss = 0.0
         dices, ious = [], []
-        for batch in tqdm(self.val_loader, desc="Validation", leave=False):
+        desc = f"Epoch [{epoch+1}/{epochs}] Validation"
+        for batch in tqdm(self.val_loader, desc=desc, leave=False):
             imgs = batch['image'].to(self.device)
             masks = batch['mask'].to(self.device)
 
@@ -107,15 +109,15 @@ class Trainer:
     def fit(self, epochs=10, verbose=True, save_model_path=None, save_plots_path=None):
         start_time = time.time()
         for epoch in range(epochs):
-            train_loss, train_dice, train_iou = self.train_one_epoch()
-            val_loss, val_dice, val_iou = self.validate()
+            train_loss, train_dice, train_iou = self.train_one_epoch(epoch, epochs)
+            val_loss, val_dice, val_iou = self.validate(epoch, epochs)
 
             self.checkpoint['train_loss'].append(train_loss)
             self.checkpoint['val_loss'].append(val_loss)
             self.checkpoint['val_dice'].append(val_dice)
             self.checkpoint['val_iou'].append(val_iou)
 
-            if verbose and (epoch + 1) % (epochs // 10) == 0:
+            if verbose and (epoch + 1) % 10 == 0:
                 print(f'Epoch {epoch+1}/{epochs} - '
                       f'Train Loss: {train_loss:.4f}, Train Dice: {train_dice:.4f}, Train IoU: {train_iou:.4f} | '
                       f'Val Loss: {val_loss:.4f}, Val Dice: {val_dice:.4f}, Val IoU: {val_iou:.4f}')
@@ -216,7 +218,7 @@ class Trainer:
 
             pred = preds[i].squeeze().numpy()
             mask = masks[i].squeeze().numpy()
-            dice, iou = compute_dice_iou(pred, mask)
+            dice, iou = self._dice_iou_sample(pred, mask)
 
             axes[i, 0].imshow(img)
             axes[i, 0].set_title('Input Image')
@@ -237,4 +239,12 @@ class Trainer:
             plt.savefig(save_path)
         plt.show()
         plt.close(fig)
+    
+    def _dice_iou_sample(self, pred, target):
+        eps = 1e-7
+        intersection = (pred * target).sum()
+        sum_preds_targets = pred.sum() + target.sum()
+        dice = (2. * intersection) / (sum_preds_targets + eps)
+        iou = intersection / (sum_preds_targets - intersection + eps)
+        return dice.item(), iou.item()
       
