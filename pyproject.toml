@@ -10,6 +10,7 @@ dependencies = [
     "matplotlib>=3.10.6",
     "matplotlib-inline>=0.1.7",
     "missingno>=0.5.2",
+    "monai>=1.5.1",
     "pandas>=2.3.2",
     "scikit-learn>=1.7.2",
     "sync>=1.0.0",

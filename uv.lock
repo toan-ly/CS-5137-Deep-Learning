@@ -204,6 +204,7 @@ dependencies = [
     { name = "matplotlib" },
     { name = "matplotlib-inline" },
     { name = "missingno" },
+    { name = "monai" },
     { name = "pandas" },
     { name = "scikit-learn" },
     { name = "sync" },
@@ -219,6 +220,7 @@ requires-dist = [
     { name = "matplotlib", specifier = ">=3.10.6" },
     { name = "matplotlib-inline", specifier = ">=0.1.7" },
     { name = "missingno", specifier = ">=0.5.2" },
+    { name = "monai", specifier = ">=1.5.1" },
     { name = "pandas", specifier = ">=2.3.2" },
     { name = "scikit-learn", specifier = ">=1.7.2" },
     { name = "sync", specifier = ">=1.0.0" },
@@ -694,6 +696,19 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/2b/f9/e20220b851bc6d7abf70b403a3080d6af946ed4b13b2bf91ef4e74d2aec9/missingno-0.5.2.tar.gz", hash = "sha256:4a4baa9ca9f9e4e0d9402455df26b656632e94b99e87fa64c0cdbbbc722837ac", size = 17489, upload-time = "2023-02-26T20:10:29.329Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/87/22/cd5cf999af21c2f97486622c551ac3d07361ced8125121e907f588ff5f24/missingno-0.5.2-py3-none-any.whl", hash = "sha256:55782621ce09ba0f0a1d08e5bd6d6fe1946469fb03951fadf7d209911ca5b072", size = 8704, upload-time = "2023-02-26T20:10:26.042Z" },
+]
+
+[[package]]
+name = "monai"
+version = "1.5.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+    { name = "torch" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/d0/19/53c7a105640542a324b3aef1213d18ffa53782f818b4f364a7db3a3e3a53/monai-1.5.1.tar.gz", hash = "sha256:24268e406511a7b00f734c0e741753845185c9d65c20a193704d99a9fe785d9f", size = 1686946, upload-time = "2025-09-22T17:39:59.574Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/83/3b/ee8c03de875507d8d56c86b5ede71514812d657a4a600844d3fa73478098/monai-1.5.1-py3-none-any.whl", hash = "sha256:3112e6ce63352f2ebb8a324a5c199b026aa8e61e914b4912cda3e890e6f7e7c5", size = 2674860, upload-time = "2025-09-22T17:39:57.624Z" },
 ]
 
 [[package]]
