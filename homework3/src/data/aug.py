@@ -1,7 +1,8 @@
 from monai.transforms import (
     LoadImageD, EnsureChannelFirstD, Compose, ResizeD,
     ScaleIntensityRangeD, RandFlipD, RandRotateD,
-    RandZoomD, EnsureTypeD, AsDiscreteD, ToTensorD
+    RandZoomD, EnsureTypedD, AsDiscreteD, ToTensorD,
+    RandAdjustContrastD
 )
 
 def get_transforms(
@@ -33,11 +34,12 @@ def get_transforms(
             RandFlipD(keys=keys, prob=0.5, spatial_axis=0), # horizontal flip
             RandFlipD(keys=keys, prob=0.5, spatial_axis=1), # vertical flip
             RandRotateD(keys=keys, range_x=0.087, prob=0.3), # 5 degrees
-            RandZoomD(keys=keys, min_zoom=0.9, max_zoom=1.1, prob=0.3)
+            RandZoomD(keys=keys, min_zoom=0.9, max_zoom=1.1, prob=0.3),
+            RandAdjustContrastD(keys=['image'], prob=0.3, gamma=(0.9, 1.1)),
         ]
     
     transforms += [
-        EnsureTypeD(keys=keys),
+        EnsureTypedD(keys=keys),
         AsDiscreteD(keys=['mask'], threshold=0.5),
         # ToTensorD(keys=keys),
     ]
