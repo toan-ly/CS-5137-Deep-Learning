@@ -21,20 +21,21 @@ def get_transforms(
         LambdaD(keys=['image'], func=lambda x: x[1:2, ...] if use_green_channel else x),
         LambdaD(keys=['image'], func=lambda x: apply_clahe(x, clip_limit=2.0, tile_grid_size=(8,8), prob=0.5)),
         ScaleIntensityRangeD(keys=['image'], a_min=0, a_max=255, b_min=0.0, b_max=1.0, clip=True),
-        RandCropByPosNegLabelD(
-            keys=keys,
-            label_key='mask',
-            spatial_size=(256, 256),
-            pos=3,
-            neg=1,
-            num_samples=8,
-            image_key='image',
-            image_threshold=0,
-        ),
+        
     ]
     
     if is_train:
         transforms += [
+            RandCropByPosNegLabelD(
+                keys=keys,
+                label_key='mask',
+                spatial_size=(256, 256),
+                pos=3,
+                neg=1,
+                num_samples=8,
+                image_key='image',
+                image_threshold=0,
+            ),
             # Flip
             RandFlipD(keys=keys, prob=0.5, spatial_axis=0), # horizontal flip
             RandFlipD(keys=keys, prob=0.5, spatial_axis=1), # vertical flip
