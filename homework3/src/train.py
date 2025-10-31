@@ -19,6 +19,7 @@ def parse_args():
     ap.add_argument("--batch_size", type=int, default=4)
     ap.add_argument("--num_workers", type=int, default=0)
     ap.add_argument("--cache_rate", type=float, default=0.0, help="MONAI CacheDataset rate (0..1)")
+    ap.add_argument("--use_green_channel", action='store_true', help="Use only green channel of the input images")
 
     # Model
     ap.add_argument("--in_channels", type=int, default=3)

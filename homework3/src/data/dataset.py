@@ -34,6 +34,7 @@ def make_loaders(
     cache_rate=0.0,
     val_ratio=0.2,
     seed=42,
+    use_green_channel=False,
 ):
     """
     Create training and validation data loaders.
@@ -42,8 +43,8 @@ def make_loaders(
     train_data = collect_pairs(train_root)
     train_data, val_data = split_data(train_data, val_ratio, seed)
 
-    train_transforms = get_transforms(im_size, is_train=True)
-    val_transforms = get_transforms(im_size, is_train=False)
+    train_transforms = get_transforms(im_size, use_green_channel=use_green_channel, is_train=True)
+    val_transforms = get_transforms(im_size, use_green_channel=use_green_channel, is_train=False)
 
     if cache_rate > 0:
         train_ds = CacheDataset(data=train_data, transform=train_transforms, cache_rate=cache_rate, num_workers=num_workers)
@@ -60,9 +61,9 @@ def make_loaders(
 def make_test_loader(
     data_root,
     im_size=512,
-    normalize=True,
     batch_size=1,
     num_workers=2,
+    use_green_channel=False
 ):
     """
     Create test data loader.
@@ -70,15 +71,15 @@ def make_test_loader(
     test_root = os.path.join(data_root, 'test')
     test_data = collect_pairs(test_root)
 
-    test_transforms = get_transforms(im_size, normalize, is_train=False)
+    test_transforms = get_transforms(im_size, use_green_channel=use_green_channel, is_train=False)
     test_ds = Dataset(data=test_data, transform=test_transforms)
     test_loader = DataLoader(test_ds, batch_size=batch_size, shuffle=False, num_workers=num_workers)
     return test_loader
 
 if __name__ == "__main__":
     data_root = Path(__file__).parent.parent.parent / 'data'
-    train_loader, val_loader = make_loaders(data_root, im_size=512, normalize=True, batch_size=2, num_workers=0, cache_rate=0.5)
-    test_loader = make_test_loader(data_root, im_size=512, normalize=True, batch_size=1, num_workers=0)
+    train_loader, val_loader = make_loaders(data_root, im_size=512,  batch_size=2, num_workers=0, cache_rate=0.5, use_green_channel=True)
+    test_loader = make_test_loader(data_root, im_size=512, batch_size=1, num_workers=0, use_green_channel=False)
     for batch in train_loader:
         print(batch['image'].shape, batch['mask'].shape)
         break
