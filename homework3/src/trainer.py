@@ -214,7 +214,7 @@ class Trainer:
         masks = torch.cat(masks, dim=0)[:num_samples]
         preds = torch.cat(preds, dim=0)[:num_samples]
 
-        plt.rcParams['figure.figsize'] = [8, 4 * num_samples]
+        plt.rcParams['figure.figsize'] = [10, 4 * num_samples]
         fig, axes = plt.subplots(num_samples, 3)
         for i in range(num_samples):
             img = imgs[i].permute(1, 2, 0).numpy()
@@ -241,8 +241,8 @@ class Trainer:
         plt.tight_layout()
         if save_path:
             save_path = os.path.join(save_path, f'epoch_{epoch+1}.png')
-            plt.savefig(save_path)
-        plt.show()
+            plt.savefig(save_path, bbox_inches='tight')
+        # plt.show()
         plt.close(fig)
     
     def _dice_iou_sample(self, pred, target):
