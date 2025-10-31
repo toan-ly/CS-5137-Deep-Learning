@@ -15,11 +15,12 @@ def parse_args():
     # Data
     ap.add_argument("--data_root", required=True, help="dataset_root with train/ and test/")
     ap.add_argument("--img_size", type=int, default=512)
-    ap.add_argument("--seed", type=int, default=2025)
+    ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--batch_size", type=int, default=4)
     ap.add_argument("--num_workers", type=int, default=0)
     ap.add_argument("--cache_rate", type=float, default=0.0, help="MONAI CacheDataset rate (0..1)")
     ap.add_argument("--use_green_channel", action='store_true', help="Use only green channel of the input images")
+    ap.add_argument("--val_ratio", type=float, default=0.3, help="Validation data ratio")
 
     # Model
     ap.add_argument("--in_channels", type=int, default=3)
@@ -40,7 +41,7 @@ def parse_args():
     ap.add_argument("--early_stopping", action='store_true')
     ap.add_argument("--early_stopping_patience", type=int, default=10)
     ap.add_argument("--activation", choices=["relu","leaky_relu","elu"], default="relu")
-    ap.add_argument("--up_mode", choices=["transpose","bilinear"], default="transpose")
+    ap.add_argument("--up_mode", choices=["transpose","bilinear"], default="bilinear")
 
     # I/O
     ap.add_argument("--save_dir", default="checkpoints")
@@ -63,7 +64,7 @@ def main():
         batch_size=args.batch_size,
         num_workers=args.num_workers,
         cache_rate=args.cache_rate,
-        val_ratio=0.2,
+        val_ratio=args.val_ratio,
         seed=args.seed,
     )
 
