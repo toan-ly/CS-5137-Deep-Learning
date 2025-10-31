@@ -26,7 +26,7 @@ def parse_args():
     ap.add_argument("--in_channels", type=int, default=3)
     ap.add_argument("--out_channels", type=int, default=1)
     ap.add_argument("--base_channels", type=int, default=32)
-    ap.add_argument("--depth", type=int, choices=[2,3], default=2)
+    ap.add_argument("--depth", type=int, default=3)
     ap.add_argument("--dropout", type=float, default=0.0)
 
     # Optimization
