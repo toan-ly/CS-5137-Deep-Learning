@@ -68,7 +68,7 @@ def main():
         seed=args.seed,
     )
 
-    features = [args.base_channels * (2 ** i) for i in range(args.depth)]
+    features = [args.base_channels * (2 ** i) for i in range(args.depth + 1)]
     model = UNet(
         n_channels=args.in_channels,
         n_classes=args.out_channels,
