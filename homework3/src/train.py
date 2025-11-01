@@ -62,6 +62,9 @@ def parse_args():
             if not hasattr(args, k):
                 raise ValueError(f"Unknown YAML config key: {k}")
             setattr(args, k, v)
+    
+    if args.use_green_channel:
+        args.in_channels = 1
 
     return args
 
