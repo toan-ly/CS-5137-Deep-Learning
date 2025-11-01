@@ -36,7 +36,7 @@ def train_transforms(im_size=512, use_green_channel=False, use_patch=False):
             label_key='mask',
             spatial_size=(256, 256),
             pos=3, neg=1,
-            num_samples=6,
+            num_samples=8,
             image_key='image',
             image_threshold=0,
         ) if use_patch else IdentityD(keys=keys),
