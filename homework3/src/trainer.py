@@ -257,7 +257,7 @@ class Trainer:
     def _get_scheduler(self, scheduler_name):
         scheduler_map = {
             'step': optim.lr_scheduler.StepLR(self.optimizer, step_size=10, gamma=0.5),
-            'plateau': optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, mode='min', factor=0.5, patience=5, verbose=True),
+            'plateau': optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, mode='min', factor=0.5, patience=5),
             'cosine': optim.lr_scheduler.CosineAnnealingLR(self.optimizer, T_max=20, eta_min=1e-6),
         }
         if scheduler_name not in scheduler_map:
