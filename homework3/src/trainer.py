@@ -267,7 +267,7 @@ class Trainer:
             'dice': lambda: DiceLoss(sigmoid=True, squared_pred=True),
             'focal': lambda: FocalLoss(gamma=2.0),
             'tversky': lambda: TverskyLoss(sigmoid=True, alpha=0.3, beta=0.7),
-            'hausdorff': lambda: HausdorffDTLoss(sigmoid=True),
+            'hausdorff': lambda: HausdorffDTLoss(sigmoid=True, include_background=True),
         }
 
         name = name.strip().lower()
