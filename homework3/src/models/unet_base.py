@@ -50,7 +50,9 @@ class DoubleConv(nn.Module):
 
 class ResidualConv(nn.Module):
     """
-    Residual convolutional block with two convolutional layers and a skip connection.
+    Residual convolutional block with two convolutional layers and a residual connection.
+
+    Conv -> BatchNorm -> ReLU -> Conv -> BatchNorm -> Add Residual -> ReLU
     """
     def __init__(
         self, 
@@ -88,7 +90,7 @@ class ResidualConv(nn.Module):
         if self.downsample:
             residual = self.downsample(residual)
 
-        out += residual
+        out += residual # residual connection
         out = self.activation(out)
 
         if self.dropout:

@@ -33,12 +33,14 @@ class UNet(nn.Module):
 
         self.activation = get_activation(activation)
 
-        if block_type == 'base':
-            self.double_conv = DoubleConv
-        elif block_type == 'residual':
-            self.double_conv = ResidualConv
-        else:
-            raise ValueError(f"Unsupported block_type: {block_type}")
+        block_map = {
+            'base': DoubleConv,
+            'residual': ResidualConv,
+        }
+
+        if block_type not in block_map:
+            raise ValueError(f"Unsupported block_type: {block_type}. Supported types are: {list(block_map.keys())}")
+        self.double_conv = block_map[block_type]
 
         # Downsampling path / Encoder
         self.encoder = nn.ModuleList()
