@@ -28,7 +28,7 @@ def train_transforms(im_size=512, use_green_channel=False):
         ResizeD(keys=keys, spatial_size=(im_size, im_size), mode=mode),
         LambdaD(keys=['image'], func=lambda x: x[1:2, ...] if use_green_channel else x),
         LambdaD(keys=['image'], func=lambda x: apply_clahe(x, clip_limit=2.0, tile_grid_size=(8,8), prob=0.8)),
-        # ScaleIntensityRangeD(keys=['image'], a_min=0, a_max=255, b_min=0.0, b_max=1.0, clip=True),
+        ScaleIntensityRangeD(keys=['image'], a_min=0, a_max=255, b_min=0.0, b_max=1.0, clip=True),
         RandCropByPosNegLabelD(
             keys=keys,
             label_key='mask',
@@ -64,7 +64,7 @@ def val_transforms(im_size=512, use_green_channel=False):
         ResizeD(keys=keys, spatial_size=(im_size, im_size), mode=mode),
         LambdaD(keys=['image'], func=lambda x: x[1:2, ...] if use_green_channel else x),
         LambdaD(keys=['image'], func=lambda x: apply_clahe(x, clip_limit=2.0, tile_grid_size=(8,8), prob=0.0)),
-        # ScaleIntensityRangeD(keys=['image'], a_min=0, a_max=255, b_min=0.0, b_max=1.0, clip=True),
+        ScaleIntensityRangeD(keys=['image'], a_min=0, a_max=255, b_min=0.0, b_max=1.0, clip=True),
         EnsureTypeD(keys=keys),
         AsDiscreteD(keys=['mask'], threshold=0.5),
     ])

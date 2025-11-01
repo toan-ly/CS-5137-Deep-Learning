@@ -5,7 +5,8 @@ homework2/data/
 homework2/weights/
 homework2/results/screenshots/
 
-homework3/weights/
+homework3/*.pth
+homework3/*.pt
 
 midterm/kaggle/
 
