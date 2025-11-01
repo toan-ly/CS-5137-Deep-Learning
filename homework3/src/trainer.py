@@ -4,7 +4,10 @@ import torch.nn as nn
 import torch.optim as optim
 import numpy as np
 from tqdm.auto import tqdm
-from monai.losses import DiceLoss
+from monai.losses import (
+    DiceLoss, FocalLoss, TverskyLoss, GeneralizedDiceLoss,
+    DiceCELoss, DiceFocalLoss, DiceTverskyLoss, HausdorffDistanceLoss,
+)
 import matplotlib.pyplot as plt
 from PIL import Image
 import os
@@ -179,17 +182,6 @@ class Trainer:
 
         return np.mean(dices), np.mean(ious)
 
-    def _get_loss(self, loss_name):
-        if loss_name == 'bce':
-            return nn.BCEWithLogitsLoss()
-        if loss_name == 'dice':
-            return DiceLoss(sigmoid=True, squared_pred=True, reduction='mean')
-        if loss_name == 'bce_dice':
-            dice = DiceLoss(sigmoid=True, squared_pred=True, reduction='mean')
-            bce = nn.BCEWithLogitsLoss()
-            return lambda pred, target: 0.5 * bce(pred, target) + 0.5 * dice(pred, target)
-        raise ValueError(f'Unknown loss function: {loss_name}')
-
     @torch.no_grad()
     def _visualize(self, epoch, save_path=None, num_samples=3):
         self.model.eval()
@@ -260,4 +252,43 @@ class Trainer:
             return optim.AdamW(self.model.parameters(), lr=lr)
         if optim_name == 'sgd':
             return optim.SGD(self.model.parameters(), lr=lr, momentum=0.9)
-        raise ValueError(f'Unknown optimizer: {optim_name}')
+        raise ValueError(f'Unknown optimizer: {optim_name}')    
+
+    def _get_loss(self, name):
+        """
+        Examples of loss_name:
+            'bce' 
+            'dice'
+            'bce+dice'
+            'bce+dice@0.3,0.7'
+        """
+        criterions = {
+            'bce': nn.BCEWithLogitsLoss,
+            'dice': lambda: DiceLoss(sigmoid=True, squared_pred=True, reduction='mean'),
+            'focal': lambda: FocalLoss(sigmoid=True, reduction='mean', gamma=2.0),
+            'tversky': lambda: TverskyLoss(sigmoid=True, reduction='mean', alpha=0.5, beta=0.5),
+            'hausdorff': lambda: HausdorffDistanceLoss(sigmoid=True, reduction='mean'),
+        }
+
+        name = name.strip().lower()
+
+        if '+' in name:
+            if '@' in name:
+                loss_part, weight_part = name.split('@')
+                weights = [float(w) for w in weight_part.split(',')]
+            else:
+                loss_part = name
+                weights = None
+            loss_names = loss_part.split('+')
+            if loss_names[0] not in criterions or loss_names[1] not in criterions:
+                raise ValueError(f'Unknown loss(es): {loss_names[0]}, {loss_names[1]}')
+            
+            w1, w2 = (0.5, 0.5) if weights is None else (weights[0], weights[1])
+            criterion1 = criterions[loss_names[0]]()
+            criterion2 = criterions[loss_names[1]]()
+
+            return lambda preds, targets: w1 * criterion1(preds, targets) + w2 * criterion2(preds, targets)
+        
+        if name not in criterions:
+            raise ValueError(f'Unknown loss: {name}')
+        return criterions[name]()

@@ -2,6 +2,7 @@ import torch
 import numpy as np
 import random
 import os
+import matplotlib.pyplot as plt
 
 def set_seed(seed):
     random.seed(seed)
@@ -26,3 +27,29 @@ def get_device(device_str=None):
     if device_str is not None:
         return torch.device(device_str)
     return torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+def plot_loss(loss_df, save_dir):
+    fig, axs = plt.subplots(1, 3, figsize=(12, 4))
+    axs[0].plot(loss_df['epoch'], loss_df['train_loss'], label='train_loss')
+    axs[0].plot(loss_df['epoch'], loss_df['val_loss'], label='val_loss')
+    axs[0].set_xlabel('Epoch')
+    axs[0].set_ylabel('Loss')
+    axs[0].set_title('Training and Validation Loss')
+    axs[0].legend()
+
+    axs[1].plot(loss_df['epoch'], loss_df['train_dice'], label='train_dice')
+    axs[1].plot(loss_df['epoch'], loss_df['val_dice'], label='val_dice')
+    axs[1].set_xlabel('Epoch')
+    axs[1].set_ylabel('Dice')
+    axs[1].set_title('Training and Validation Dice')
+    axs[1].legend()
+
+    axs[2].plot(loss_df['epoch'], loss_df['train_iou'], label='train_iou')
+    axs[2].plot(loss_df['epoch'], loss_df['val_iou'], label='val_iou')
+    axs[2].set_xlabel('Epoch')
+    axs[2].set_ylabel('IoU')
+    axs[2].set_title('Training and Validation IoU')
+    axs[2].legend()
+
+    plt.tight_layout()
+    plt.savefig(os.path.join(save_dir, 'train_curve.png'))
