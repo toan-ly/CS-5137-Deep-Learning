@@ -1,9 +1,8 @@
-import os
-import random
+import os, math
 import numpy as np
 import matplotlib.pyplot as plt
 from pathlib import Path
-
+import torch
 from monai.transforms import (
     Compose, LoadImageD, EnsureChannelFirstD, ResizeD, EnsureTypeD,
     RandFlipD, RandRotateD, RandRotate90D, RandZoomD,
@@ -11,125 +10,102 @@ from monai.transforms import (
     RandGaussianNoiseD, RandGaussianSmoothD, RandCropByPosNegLabelD,
     LambdaD
 )
-
-from monai.data import Dataset, DataLoader
 from monai.utils import set_determinism
+from src.data.clahe import apply_clahe
 
-from src.data.clahe import apply_clahe 
-
-ROOT = Path(__file__).parent.parent
-DATA_ROOT = ROOT / "data"
-IMAGE_PATH = DATA_ROOT / "train/images/20.png"
-MASK_PATH = DATA_ROOT / "train/masks/20.png"
+ROOT = Path(__file__).parent.parent.parent
+IMG = ROOT / "data/train/image/20.png"
+MASK = ROOT / "data/train/mask/20.png"
 IM_SIZE = 512
-USE_GREEN = True            
-N_SAMPLES_PER_AUG = 4       
-SAVE_DIR = None             
+SAVE = ROOT / "figures/augmentation_previews"; os.makedirs(SAVE, exist_ok=True)
+KEYS, MODE = ("image","mask"), ("bilinear","nearest")
+# set_determinism(42)
 
-# set_determinism(seed=42)
+def preprocess(x):
+    if hasattr(x, "as_tensor"): x = x.as_tensor()
+    if isinstance(x, torch.Tensor): x = x.detach().cpu().numpy()
+    a = np.asarray(x)
+    a = np.transpose(a, (1,2,0)).astype(np.float32)  # CHW -> HWC
+    mn, mx = a.min(), a.max()
+    if mx > mn: 
+        a = (a - mn) / (mx - mn)
+    if a.ndim == 3 and a.shape[2] == 1: 
+        a = a[..., 0]
+    return np.clip(a, 0, 1)
 
-def keep_green_or_first(x):
-    return x[1:2, ...] if x.shape[0] >= 2 else x[0:1, ...]
+def base(use_green: bool):
+    return Compose([
+        LoadImageD(keys=KEYS),
+        EnsureChannelFirstD(keys=KEYS),
+        ResizeD(keys=KEYS, spatial_size=(IM_SIZE, IM_SIZE), mode=MODE),
+        LambdaD(keys="image", func=lambda x: x[1:2, ...] if use_green else x),
+        LambdaD(keys="image", func=lambda x: apply_clahe(x, clip_limit=2.0, tile_grid_size=(8,8), prob=1.0)),
+        EnsureTypeD(keys=KEYS),
+    ])
 
-def to_hwc(img_chw):
-    if img_chw.ndim == 3:
-        c, h, w = img_chw.shape
-        if c == 1:
-            return img_chw[0]
+def build_augs():
+    return [
+        ("Base",            Compose([])),
+        ("FlipH",           Compose([RandFlipD(keys=KEYS, prob=1.0, spatial_axis=0)])),
+        ("FlipV",           Compose([RandFlipD(keys=KEYS, prob=1.0, spatial_axis=1)])),
+        ("Rotate90",        Compose([RandRotate90D(keys=KEYS, prob=1.0, max_k=1)])),
+        ("RotateSmall",     Compose([RandRotateD(keys=KEYS, range_x=0.17, prob=1.0, mode=MODE)])),
+        ("Zoom", Compose([RandZoomD(keys=KEYS, min_zoom=0.95, max_zoom=1.05, prob=1.0, mode=MODE)])),
+        ("AdjustContrast",  Compose([RandAdjustContrastD(keys=["image"], prob=1.0, gamma=(0.9, 1.1))])),
+        ("HistShift",       Compose([RandHistogramShiftD(keys=["image"], num_control_points=6, prob=1.0)])),
+        ("GaussNoise",      Compose([RandGaussianNoiseD(keys=["image"], prob=1.0, mean=0.0, std=0.01)])),
+        ("GaussSmooth",     Compose([RandGaussianSmoothD(keys=["image"], sigma_x=(0.5,1.0), prob=1.0)])),
+        ("RandCrop",     Compose([RandCropByPosNegLabelD(
+            keys=KEYS, label_key="mask", spatial_size=(256,256),
+            pos=3, neg=1, num_samples=2, image_key="image", image_threshold=0.0
+        )])),
+    ]
+
+def visualize_augmentations(use_green: bool, outfile: str):
+    item = {"image": str(IMG), "mask": str(MASK)}
+    b = base(use_green)
+    augs = build_augs()
+
+    results = []
+    for name, aug in augs:
+        out = aug(b(item))
+        if name == "RandCrop":
+            for i, out in enumerate(out):
+                results.append((f"{name}_{i+1}", out["image"], out["mask"]))
         else:
-            return np.transpose(img_chw, (1, 2, 0))
-    return img_chw
+            if isinstance(out, list): 
+                out = out[0]
+            results.append((name, out["image"], out["mask"]))
 
-def show_grid(pairs, title, save_path=None):
-    cols = len(pairs)
-    fig, axes = plt.subplots(2, cols, figsize=(4*cols, 8))
-    fig.suptitle(title, fontsize=14)
+    cols = 4
+    rows = (len(results) + cols - 1) // cols
+    fig, axes = plt.subplots(2*rows, cols, figsize=(4*cols, 8*rows))
+    axes = np.array(axes).reshape(2*rows, cols)
 
-    for i, (img_c, msk_c) in enumerate(pairs):
-        img = to_hwc(img_c) 
-        msk = to_hwc(msk_c) 
+    for i, (name, img, msk) in enumerate(results):
+        r0, c = (i//cols)*2, i%cols
+        img_d, msk_d = preprocess(img), preprocess(msk)
+        axes[r0, c].imshow(img_d, cmap="gray" if img_d.ndim==2 else None)
+        axes[r0, c].set_title(f"{name}\n{img_d.shape[0]}×{img_d.shape[1]}", fontsize=10)
+        axes[r0, c].axis("off")
+        axes[r0+1, c].imshow(msk_d, cmap="gray")
+        axes[r0+1, c].set_title("Mask", fontsize=9)
+        axes[r0+1, c].axis("off")
 
-        # image
-        ax = axes[0, i] if cols > 1 else axes[0]
-        if img.ndim == 2:
-            ax.imshow(img, cmap="gray")
-        else:
-            ax.imshow(np.clip(img, 0, 1))
-        ax.set_title(f"image #{i+1}")
-        ax.axis("off")
-
-        # mask
-        ax = axes[1, i] if cols > 1 else axes[1]
-        ax.imshow(msk, cmap="gray")
-        ax.set_title("mask")
-        ax.axis("off")
+    for i in range(len(results), rows*cols):
+        r0, c = (i//cols)*2, i%cols
+        axes[r0, c].axis("off")
+        axes[r0+1, c].axis("off")
 
     plt.tight_layout()
-    if save_path:
-        os.makedirs(os.path.dirname(save_path), exist_ok=True)
-        plt.savefig(save_path, dpi=150)
-        plt.close(fig)
-    else:
-        plt.show()
-
-def base_prefix(im_size=IM_SIZE):
-    t = [
-        LoadImageD(keys=["image", "mask"]),
-        EnsureChannelFirstD(keys=["image", "mask"]),
-        ResizeD(keys=["image", "mask"], spatial_size=(im_size, im_size), mode=("bilinear", "nearest")),
-    ]
-    if USE_GREEN:
-        t.append(LambdaD(keys="image", func=keep_green_or_first))
-    t.append(LambdaD(keys="image", func=lambda x: apply_clahe(x, clip_limit=2.0, tile_grid_size=(8,8), prob=1.0)))
-    t.append(EnsureTypeD(keys=["image", "mask"]))
-    return Compose(t)
-
-AUG_CANDIDATES = {
-    "Flip": Compose([RandFlipD(keys=["image","mask"], prob=1.0, spatial_axis=0)]),
-    "FlipV": Compose([RandFlipD(keys=["image","mask"], prob=1.0, spatial_axis=1)]),
-    "Rotate90": Compose([RandRotate90D(keys=["image","mask"], prob=1.0, max_k=1)]),
-    "RotateSmall": Compose([RandRotateD(keys=["image","mask"], range_x=0.17, prob=1.0, mode=("bilinear","nearest"))]),
-    "Zoom": Compose([RandZoomD(keys=["image","mask"], min_zoom=0.95, max_zoom=1.05, prob=1.0, mode=("bilinear","nearest"))]),
-
-    "AdjustContrast": Compose([RandAdjustContrastD(keys=["image"], prob=1.0, gamma=(0.9, 1.1))]),
-    "HistShift": Compose([RandHistogramShiftD(keys=["image"], num_control_points=6, prob=1.0)]),
-    "GaussianNoise": Compose([RandGaussianNoiseD(keys=["image"], prob=1.0, mean=0.0, std=0.01)]),
-    "GaussianSmooth": Compose([RandGaussianSmoothD(keys=["image"], sigma_x=(0.5,1.0), prob=1.0)]),
-
-    "RandCropPosNeg(256)": Compose([
-        RandCropByPosNegLabelD(
-            keys=["image","mask"], label_key="mask",
-            spatial_size=(256,256), pos=3, neg=1, num_samples=1,
-            image_key="image", image_threshold=0.0
-        )
-    ]),
-}
+    path = os.path.join(SAVE, outfile)
+    plt.savefig(path, dpi=300)
+    plt.close(fig)
+    print(f"Saved: {path}")
 
 def main():
-    data = [{"image": IMAGE_PATH, "mask": MASK_PATH}]
-    base = base_prefix(IM_SIZE)
-
-    for aug_name, aug in AUG_CANDIDATES.items():
-        samples = []
-        for i in range(N_SAMPLES_PER_AUG):
-            item = data[0].copy()
-            d = base(item) 
-            out = aug(d)
-            if isinstance(out, list):
-                for o in out:
-                    samples.append((o["image"].numpy(), o["mask"].numpy()))
-            else:
-                samples.append((out["image"].numpy(), out["mask"].numpy()))
-
-        if len(samples) > N_SAMPLES_PER_AUG:
-            random.shuffle(samples)
-            samples = samples[:N_SAMPLES_PER_AUG]
-
-        save_path = None
-        if SAVE_DIR:
-            save_path = os.path.join(SAVE_DIR, f"preview_{aug_name}.png")
-
-        show_grid(samples, title=f"[{aug_name}] preview", save_path=save_path)
+    visualize_augmentations(use_green=False, outfile="aug_no_green.png")
+    visualize_augmentations(use_green=True,  outfile="aug_with_green.png")
 
 if __name__ == "__main__":
     main()

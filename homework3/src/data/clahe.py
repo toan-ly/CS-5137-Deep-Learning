@@ -25,6 +25,6 @@ def apply_clahe(img, clip_limit=2.0, tile_grid_size=(8,8), prob=0.5, use_green_c
         for c in range(img.shape[2]):
             img[:, :, c] = clahe.apply(img[:, :, c])
     
-    img = np.transpose(img, (2, 0, 1))  # HWC to CHW   
+    img = np.transpose(img, (2, 0, 1))  # HWC back to CHW for MONAI format 
     return img
 
