@@ -1,6 +1,7 @@
 
 import os
 import argparse
+import yaml
 
 from src.data import make_loaders, make_test_loader
 from src.models import UNet
@@ -9,47 +10,60 @@ from src.trainer import Trainer
 
 import pandas as pd
 
-def parse_args():
-    ap = argparse.ArgumentParser("Training script")
+def build_parsers():
+    p = argparse.ArgumentParser("Training script", fromfile_prefix_chars='@')
 
     # Data
-    ap.add_argument("--data_root", required=True, help="dataset_root with train/ and test/")
-    ap.add_argument("--img_size", type=int, default=512)
-    ap.add_argument("--seed", type=int, default=42)
-    ap.add_argument("--batch_size", type=int, default=4)
-    ap.add_argument("--num_workers", type=int, default=0)
-    ap.add_argument("--cache_rate", type=float, default=0.0, help="MONAI CacheDataset rate (0..1)")
-    ap.add_argument("--use_green_channel", action='store_true', help="Use only green channel of the input images")
-    ap.add_argument("--val_ratio", type=float, default=0.3, help="Validation data ratio")
-    ap.add_argument("--use_patch", action='store_true', help="Use patch-based training")
+    p.add_argument("--data_root", required=True)
+    p.add_argument("--img_size", type=int, default=512)
+    p.add_argument("--seed", type=int, default=42)
+    p.add_argument("--batch_size", type=int, default=4)
+    p.add_argument("--num_workers", type=int, default=0)
+    p.add_argument("--cache_rate", type=float, default=0.0)
+    p.add_argument("--use_green_channel", action='store_true')
+    p.add_argument("--val_ratio", type=float, default=0.2)
+    p.add_argument("--use_patch", action='store_true')
 
     # Model
-    ap.add_argument("--in_channels", type=int, default=3)
-    ap.add_argument("--out_channels", type=int, default=1)
-    ap.add_argument("--base_channels", type=int, default=32)
-    ap.add_argument("--depth", type=int, default=3)
-    ap.add_argument("--dropout", type=float, default=0.0)
+    p.add_argument("--in_channels", type=int, default=3)
+    p.add_argument("--out_channels", type=int, default=1)
+    p.add_argument("--base_channels", type=int, default=32)
+    p.add_argument("--depth", type=int, default=2)
+    p.add_argument("--dropout", type=float, default=0.0)
+    p.add_argument("--activation", default="relu")
+    p.add_argument("--up_mode", choices=["transpose","bilinear"], default="bilinear")
 
     # Optimization
-    ap.add_argument("--epochs", type=int, default=50)
-    ap.add_argument("--lr", type=float, default=1e-3)
-    ap.add_argument("--weight_decay", type=float, default=1e-4)
-    ap.add_argument("--loss", choices=["bce","dice","bce_dice"], default="bce_dice")
-    ap.add_argument("--scheduler", choices=["step","plateau","none"], default="step")
-    ap.add_argument("--optimizer", choices=["adam","adamw","sgd"], default="adamw")
+    p.add_argument("--epochs", type=int, default=200)
+    p.add_argument("--lr", type=float, default=1e-3)
+    p.add_argument("--weight_decay", type=float, default=1e-4)
+    p.add_argument("--loss", default="dice")
+    p.add_argument("--scheduler", default="step")
+    p.add_argument("--optimizer", default="adamw")
 
     # Trainer features
-    ap.add_argument("--early_stopping", action='store_true')
-    ap.add_argument("--early_stopping_patience", type=int, default=10)
-    ap.add_argument("--activation", choices=["relu","leaky_relu","elu"], default="relu")
-    ap.add_argument("--up_mode", choices=["transpose","bilinear"], default="bilinear")
+    p.add_argument("--early_stopping", action='store_true')
+    p.add_argument("--patience", type=int, default=10)
+    p.add_argument("--save_dir", default="checkpoints")
+    p.add_argument("--save_plots_path", default="results/predictions")
+    p.add_argument("--device", default=None)
 
-    # I/O
-    ap.add_argument("--save_dir", default="checkpoints")
-    ap.add_argument("--save_plots_path", default="results/predictions")
-    ap.add_argument("--device", default=None, help="force device, e.g., 'cuda'|'mps'|'cpu'")
-    ap.add_argument("--metrics_csv", default=None, help="optional CSV to append metrics per epoch")
-    return ap.parse_args()
+    return p
+
+def parse_args():
+    p = build_parsers()
+
+    # Get training configs from yaml file if provided
+    args, _ = p.parse_known_args()
+    if args.config:
+        with open(args.config, 'r') as f:
+            config_args = yaml.safe_load(f)
+        for k, v in config_args.items():
+            if not hasattr(args, k):
+                raise ValueError(f"Unknown YAML config key: {k}")
+            setattr(args, k, v)
+
+    return args
 
 def main():
     args = parse_args()
@@ -90,7 +104,7 @@ def main():
         loss=args.loss,
         lr=args.lr,
         early_stopping=args.early_stopping,
-        early_stopping_patience=args.early_stopping_patience,
+        patience=args.patience,
         scheduler='step',
     )
 

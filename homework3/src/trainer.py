@@ -31,7 +31,7 @@ class Trainer:
         optimizer_name='adam',
         lr=0.001,
         early_stopping=True,
-        early_stopping_patience=3,
+        patience=3,
         scheduler=None,
     ):
         self.device = device
@@ -47,7 +47,7 @@ class Trainer:
         
         # Early stopping
         self.early_stopping = early_stopping
-        self.early_stopping_patience = early_stopping_patience
+        self.patience = patience
         self.best_metric = -float('inf')
         # self.best_metric = float('inf')
         self.epochs_no_improve = 0
@@ -140,7 +140,7 @@ class Trainer:
                     self.best_weights = self.model.state_dict()
                 else:
                     self.epochs_no_improve += 1
-                    if self.epochs_no_improve >= self.early_stopping_patience:
+                    if self.epochs_no_improve >= self.patience:
                         print("=> Early stopping at epoch", epoch+1)
                         if self.best_weights is not None:
                             self.model.load_state_dict(self.best_weights)
