@@ -5,7 +5,8 @@ import torch.optim as optim
 import numpy as np
 from tqdm.auto import tqdm
 from monai.losses import (
-    DiceLoss, FocalLoss, TverskyLoss, HausdorffDistanceLoss
+    DiceLoss, FocalLoss, TverskyLoss, 
+    HausdorffDTLoss
 )
 import matplotlib.pyplot as plt
 from PIL import Image
@@ -266,7 +267,7 @@ class Trainer:
             'dice': lambda: DiceLoss(sigmoid=True, squared_pred=True, reduction='mean'),
             'focal': lambda: FocalLoss(sigmoid=True, reduction='mean', gamma=2.0),
             'tversky': lambda: TverskyLoss(sigmoid=True, reduction='mean', alpha=0.3, beta=0.7),
-            'hausdorff': lambda: HausdorffDistanceLoss(sigmoid=True, reduction='mean'),
+            'hausdorff': lambda: HausdorffDTLoss(sigmoid=True, reduction='mean'),
         }
 
         name = name.strip().lower()
