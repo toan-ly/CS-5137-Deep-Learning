@@ -21,6 +21,7 @@ def parse_args():
     ap.add_argument("--cache_rate", type=float, default=0.0, help="MONAI CacheDataset rate (0..1)")
     ap.add_argument("--use_green_channel", action='store_true', help="Use only green channel of the input images")
     ap.add_argument("--val_ratio", type=float, default=0.3, help="Validation data ratio")
+    ap.add_argument("--use_patch", action='store_true', help="Use patch-based training")
 
     # Model
     ap.add_argument("--in_channels", type=int, default=3)
@@ -66,6 +67,8 @@ def main():
         cache_rate=args.cache_rate,
         val_ratio=args.val_ratio,
         seed=args.seed,
+        use_green_channel=args.use_green_channel,
+        use_patch=args.use_patch,
     )
 
     features = [args.base_channels * (2 ** i) for i in range(args.depth + 1)]

@@ -3,6 +3,7 @@ from monai.transforms import (
     ScaleIntensityRangeD, RandFlipD, RandRotateD, RandRotate90D,
     RandZoomD, EnsureTypeD, AsDiscreteD, RandGaussianNoiseD, 
     RandCropByPosNegLabelD, LambdaD, RandAdjustContrastD, RandHistogramShiftD,
+    IdentityD
 )
 
 from .clahe import apply_clahe
@@ -10,15 +11,16 @@ from .clahe import apply_clahe
 def get_transforms(
     im_size=512,
     use_green_channel=False,
-    is_train=True
+    is_train=True,
+    use_patch=False
 ):
     if is_train:
-        return train_transforms(im_size, use_green_channel)
+        return train_transforms(im_size, use_green_channel, use_patch)
     else:
         return val_transforms(im_size, use_green_channel)
 
 
-def train_transforms(im_size=512, use_green_channel=False):
+def train_transforms(im_size=512, use_green_channel=False, use_patch=False):
     keys = ('image', 'mask')
     mode = ('bilinear', 'nearest')
 
@@ -34,10 +36,10 @@ def train_transforms(im_size=512, use_green_channel=False):
             label_key='mask',
             spatial_size=(256, 256),
             pos=3, neg=1,
-            num_samples=8,
+            num_samples=6,
             image_key='image',
             image_threshold=0,
-        ),
+        ) if use_patch else IdentityD(keys=keys),
         # Flip, Rotate, Zoom
         RandFlipD(keys=keys, prob=0.5, spatial_axis=0), # horizontal flip
         RandFlipD(keys=keys, prob=0.5, spatial_axis=1), # vertical flip
