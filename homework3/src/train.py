@@ -92,7 +92,11 @@ def main():
 
     for batch in train_loader:
         print(f"Image batch shape: {batch['image'].shape}")
-        print(f"Mask batch shape: {batch['mask'].shape}")
+        print(f"Mask batch shape: {batch['mask'].shape}\n")
+        break
+    for batch in val_loader:
+        print(f"Image batch shape: {batch['image'].shape}")
+        print(f"Mask batch shape: {batch['mask'].shape}\n")
         break
 
     print('Starting training...')
@@ -106,6 +110,11 @@ def main():
         dropout=args.dropout,
         up_mode=args.up_mode,
     )
+
+    n_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    print("Model summary:")
+    print(model)
+    print(f"Number of trainable parameters: {n_params}\n")
 
     trainer = Trainer(
         model=model,
