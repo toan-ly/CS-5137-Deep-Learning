@@ -5,8 +5,7 @@ import torch.optim as optim
 import numpy as np
 from tqdm.auto import tqdm
 from monai.losses import (
-    DiceLoss, FocalLoss, TverskyLoss, GeneralizedDiceLoss,
-    DiceCELoss, DiceFocalLoss, DiceTverskyLoss, HausdorffDistanceLoss,
+    DiceLoss, FocalLoss, TverskyLoss, HausdorffDistanceLoss
 )
 import matplotlib.pyplot as plt
 from PIL import Image

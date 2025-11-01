@@ -5,9 +5,7 @@ homework2/data/
 homework2/weights/
 homework2/results/screenshots/
 
-homework3/*.pth
-homework3/*.pt
-
+homework3/checkpoints/
 midterm/kaggle/
 
 .DS_Store
