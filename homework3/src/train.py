@@ -2,6 +2,7 @@
 import os
 import argparse
 import yaml
+import time
 
 from src.data import make_loaders, make_test_loader
 from src.models import UNet
@@ -71,6 +72,7 @@ def parse_args():
     return args
 
 def main():
+    curr_time = time.strftime("%Y%m%d-%H%M%S")
     args = parse_args()
     set_seed(args.seed)
     device = get_device(args.device)
@@ -99,7 +101,6 @@ def main():
         print(f"Mask batch shape: {batch['mask'].shape}\n")
         break
 
-    print('Starting training...')
 
     features = [args.base_channels * (2 ** i) for i in range(args.depth + 1)]
     model = UNet(
@@ -115,6 +116,8 @@ def main():
     print("Model summary:")
     print(model)
     print(f"Number of trainable parameters: {n_params}\n")
+
+    print(f'Starting training at: {curr_time}\n')
 
     trainer = Trainer(
         model=model,
@@ -139,6 +142,8 @@ def main():
     history_df = pd.DataFrame(history)
     history_df['epoch'] = history_df.index + 1
     history_df.to_csv(os.path.join(args.save_dir, "training_history.csv"))
+
+    print(f"Training completed at: {curr_time}")
 
 
 if __name__=='__main__':
