@@ -88,10 +88,10 @@ def main():
         use_patch=args.use_patch,
     )
 
-    print(f'Training image shape: {train_loader.dataset[0]["image"].shape}')
-    print(f'Training mask shape: {train_loader.dataset[0]["mask"].shape}')
-    print(f'Validation image shape: {val_loader.dataset[0]["image"].shape}')
-    print(f'Validation mask shape: {val_loader.dataset[0]["mask"].shape}')
+    for batch in train_loader:
+        print(f"Image batch shape: {batch['image'].shape}")
+        print(f"Mask batch shape: {batch['mask'].shape}")
+        break
 
     print('Starting training...')
 
