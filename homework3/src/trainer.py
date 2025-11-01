@@ -44,8 +44,8 @@ class Trainer:
         self.optimizer = self._get_optimizer(optimizer_name, lr)
         self.scheduler = None
         if scheduler:
-            self.scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=10, gamma=0.1)
-        
+            self.scheduler = self._get_scheduler(scheduler)
+
         # Early stopping
         self.early_stopping = early_stopping
         self.patience = patience
@@ -125,7 +125,7 @@ class Trainer:
             self.checkpoint['val_dice'].append(val_dice)
             self.checkpoint['val_iou'].append(val_iou)
 
-            if verbose and (epoch + 1) % 10 == 0:
+            if verbose and (epoch + 1) % 5 == 0:
                 print(f'Epoch {epoch+1}/{epochs} - '
                       f'Train Loss: {train_loss:.4f}, Train Dice: {train_dice:.4f}, Train IoU: {train_iou:.4f} | '
                       f'Val Loss: {val_loss:.4f}, Val Dice: {val_dice:.4f}, Val IoU: {val_iou:.4f}')
@@ -253,6 +253,16 @@ class Trainer:
         if optim_name == 'sgd':
             return optim.SGD(self.model.parameters(), lr=lr, momentum=0.9)
         raise ValueError(f'Unknown optimizer: {optim_name}')    
+
+    def _get_scheduler(self, scheduler_name):
+        scheduler_map = {
+            'step': optim.lr_scheduler.StepLR(self.optimizer, step_size=10, gamma=0.5),
+            'plateau': optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, mode='min', factor=0.5, patience=5, verbose=True),
+            'cosine': optim.lr_scheduler.CosineAnnealingLR(self.optimizer, T_max=20, eta_min=1e-6),
+        }
+        if scheduler_name not in scheduler_map:
+            raise ValueError(f'Unknown scheduler: {scheduler_name}')
+        return scheduler_map[scheduler_name]
 
     def _get_loss(self, name):
         """
