@@ -264,10 +264,10 @@ class Trainer:
         """
         criterions = {
             'bce': nn.BCEWithLogitsLoss,
-            'dice': lambda: DiceLoss(sigmoid=True, squared_pred=True, reduction='mean'),
-            'focal': lambda: FocalLoss(sigmoid=True, reduction='mean', gamma=2.0),
-            'tversky': lambda: TverskyLoss(sigmoid=True, reduction='mean', alpha=0.3, beta=0.7),
-            'hausdorff': lambda: HausdorffDTLoss(sigmoid=True, reduction='mean'),
+            'dice': lambda: DiceLoss(sigmoid=True, squared_pred=True),
+            'focal': lambda: FocalLoss(gamma=2.0),
+            'tversky': lambda: TverskyLoss(sigmoid=True, alpha=0.3, beta=0.7),
+            'hausdorff': lambda: HausdorffDTLoss(sigmoid=True),
         }
 
         name = name.strip().lower()
