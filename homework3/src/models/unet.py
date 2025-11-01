@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from .unet_parts import *
+from .unet_base import *
 
 import warnings
 warnings.filterwarnings("ignore", category=RuntimeWarning, module="runpy")
@@ -16,6 +16,7 @@ class UNet(nn.Module):
         activation: str = 'relu',
         dropout: float = 0.0,
         up_mode: str = 'transpose',
+        block_type: str = 'base'  # 'base' or 'residual'
     ):
         """
         Args:
@@ -32,6 +33,13 @@ class UNet(nn.Module):
 
         self.activation = get_activation(activation)
 
+        if block_type == 'base':
+            self.double_conv = DoubleConv
+        elif block_type == 'residual':
+            self.double_conv = ResidualConv
+        else:
+            raise ValueError(f"Unsupported block_type: {block_type}")
+
         # Downsampling path / Encoder
         self.encoder = nn.ModuleList()
         in_c = n_channels
@@ -41,13 +49,14 @@ class UNet(nn.Module):
                     in_channels=in_c,
                     out_channels=feature,
                     activation=activation,
-                    dropout=dropout
+                    dropout=dropout,
+                    double_conv=self.double_conv
                 )
             )
             in_c = feature
 
         # Bottleneck
-        self.bottleneck = DoubleConv(
+        self.bottleneck = self.double_conv(
             in_channels=features[-2],
             out_channels=features[-1],
             activation=activation,
@@ -64,7 +73,8 @@ class UNet(nn.Module):
                     out_channels=feature,
                     activation=activation,
                     dropout=dropout,
-                    up_mode=up_mode
+                    up_mode=up_mode,
+                    double_conv=self.double_conv
                 )
             )
             prev_c = feature
@@ -85,7 +95,7 @@ class UNet(nn.Module):
         return self.final_conv(x)
 
 
-if __name__ == "__main__":    
+if __name__ == "__main__":
     x = torch.randn((2, 1, 512, 512))
     preds = UNet(
         n_channels=1, 
@@ -95,6 +105,7 @@ if __name__ == "__main__":
         dropout=0.0, 
         up_mode='bilinear')(x)
     assert preds.shape == (2, 2, 512, 512)
+    print('Passed test 1')
 
     preds = UNet(
         n_channels=1, 
@@ -104,3 +115,16 @@ if __name__ == "__main__":
         dropout=0.3, 
         up_mode='transpose')(x)
     assert preds.shape == (2, 2, 512, 512)
+    print('Passed test 2')
+
+    preds = UNet(
+        n_channels=1,
+        n_classes=2,
+        features=[64, 128, 256, 512, 1024],
+        activation='leaky_relu',
+        dropout=0.3,
+        up_mode='bilinear',
+        block_type='residual'
+    )(x)
+    assert preds.shape == (2, 2, 512, 512)
+    print('Passed test 3')
