@@ -41,7 +41,7 @@ def build_parsers():
     p.add_argument("--scheduler", default="step")
     p.add_argument("--optimizer", default="adamw")
 
-    # Trainer features
+    # Training
     p.add_argument("--early_stopping", action='store_true')
     p.add_argument("--patience", type=int, default=10)
     p.add_argument("--save_dir", default="checkpoints")
@@ -56,12 +56,14 @@ def parse_args():
     # Get training configs from yaml file if provided
     args, _ = p.parse_known_args()
     if args.config:
-        with open(args.config, 'r') as f:
-            config_args = yaml.safe_load(f)
-        for k, v in config_args.items():
-            if not hasattr(args, k):
-                raise ValueError(f"Unknown YAML config key: {k}")
-            setattr(args, k, v)
+        with open(args.config, "r") as f:
+            cfg = yaml.safe_load(f) or {}
+        valid = {a.dest for a in p._actions}
+        unknown = [k for k in cfg.keys() if k not in valid]
+        if unknown:
+            raise ValueError(f"Unknown YAML config key(s): {unknown}")
+        p.set_defaults(**cfg)
+    args = p.parse_args()
     
     if args.use_green_channel:
         args.in_channels = 1
