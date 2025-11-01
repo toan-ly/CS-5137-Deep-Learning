@@ -12,7 +12,7 @@ import pandas as pd
 
 def build_parsers():
     p = argparse.ArgumentParser("Training script", fromfile_prefix_chars='@')
-
+    p.add_argument("--config", type=str, default=None)
     # Data
     p.add_argument("--data_root", required=True)
     p.add_argument("--img_size", type=int, default=512)
