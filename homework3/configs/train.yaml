@@ -1,4 +1,4 @@
-data_root: ../data
+data_root: ./data
 img_size: 512
 val_ratio: 0.2
 num_workers: 2
