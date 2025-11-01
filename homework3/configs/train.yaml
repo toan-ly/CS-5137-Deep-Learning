@@ -9,14 +9,14 @@ loss: dice+bce@0.8,0.2
 lr: 0.0001
 optimizer: adamw
 use_green_channel: true
-use_patch: true
+use_patch: false
 seed: 42
 base_channels: 64
 depth: 3
 in_channels: 3
 out_channels: 1
 device: cuda
-early_stopping: true
+early_stopping: false
 patience: 20
 activation: leaky_relu
 up_mode: bilinear
