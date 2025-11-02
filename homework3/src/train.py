@@ -39,7 +39,7 @@ def build_parsers():
     # Optimization
     p.add_argument("--epochs", type=int, default=200)
     p.add_argument("--lr", type=float, default=1e-3)
-    p.add_argument("--weight_decay", type=float, default=1e-4)
+    p.add_argument("--weight_decay", type=float, default=1e-5)
     p.add_argument("--loss", default="dice")
     p.add_argument("--scheduler", choices=["step", "plateau", "cosine"], default="step")
     p.add_argument("--optimizer", default="adamw")
