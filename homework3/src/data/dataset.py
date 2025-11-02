@@ -35,7 +35,8 @@ def make_loaders(
     val_ratio=0.2,
     seed=42,
     use_green_channel=False,
-    use_patch=False
+    use_patch=False,
+    patch_size=256
 ):
     """
     Create training and validation data loaders.
@@ -44,7 +45,7 @@ def make_loaders(
     train_data = collect_pairs(train_root)
     train_data, val_data = split_data(train_data, val_ratio, seed)
 
-    train_transforms = get_transforms(im_size, use_green_channel=use_green_channel, is_train=True, use_patch=use_patch)
+    train_transforms = get_transforms(im_size, use_green_channel=use_green_channel, is_train=True, use_patch=use_patch, patch_size=patch_size)
     val_transforms = get_transforms(im_size, use_green_channel=use_green_channel, is_train=False)
 
     if cache_rate > 0:

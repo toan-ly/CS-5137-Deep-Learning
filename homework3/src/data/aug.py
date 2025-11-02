@@ -12,17 +12,21 @@ def get_transforms(
     im_size=512,
     use_green_channel=False,
     is_train=True,
-    use_patch=False
+    use_patch=False,
+    patch_size=256
 ):
     if is_train:
-        return train_transforms(im_size, use_green_channel, use_patch)
+        return train_transforms(im_size, use_green_channel, use_patch, patch_size)
     else:
         return val_transforms(im_size, use_green_channel)
 
 
-def train_transforms(im_size=512, use_green_channel=False, use_patch=False):
+def train_transforms(im_size=512, use_green_channel=False, use_patch=False, patch_size=256):
     keys = ('image', 'mask')
     mode = ('bilinear', 'nearest')
+
+    if use_patch:
+        num_samples = (im_size // patch_size) * 8 
 
     return Compose([
         LoadImageD(keys=keys),
@@ -34,9 +38,9 @@ def train_transforms(im_size=512, use_green_channel=False, use_patch=False):
         RandCropByPosNegLabelD(
             keys=keys,
             label_key='mask',
-            spatial_size=(256, 256),
+            spatial_size=(patch_size, patch_size),
             pos=3, neg=1,
-            num_samples=8,
+            num_samples=num_samples,
             image_key='image',
             image_threshold=0,
         ) if use_patch else IdentityD(keys=keys),

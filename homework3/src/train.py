@@ -24,6 +24,7 @@ def build_parsers():
     p.add_argument("--use_green_channel", action='store_true')
     p.add_argument("--val_ratio", type=float, default=0.2)
     p.add_argument("--use_patch", action='store_true')
+    p.add_argument("--patch_size", type=int, default=256)
 
     # Model
     p.add_argument("--in_channels", type=int, default=3)
@@ -91,6 +92,7 @@ def main():
         seed=args.seed,
         use_green_channel=args.use_green_channel,
         use_patch=args.use_patch,
+        patch_size=args.patch_size
     )
 
     for batch in train_loader:
