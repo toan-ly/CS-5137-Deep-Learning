@@ -235,7 +235,7 @@ class Trainer:
         if save_path:
             save_path = os.path.join(save_path, f'epoch_{epoch+1}.png')
             plt.savefig(save_path, bbox_inches='tight')
-        # plt.close(fig)
+        plt.close(fig)
     
     def _dice_iou_sample(self, pred, target):
         eps = 1e-7
