@@ -35,6 +35,7 @@ def build_parsers():
     p.add_argument("--activation", default="relu")
     p.add_argument("--up_mode", choices=["transpose","bilinear"], default="bilinear")
     p.add_argument("--block_type", choices=["base","residual"], default="base")
+    p.add_argument("--norm_type", required=False, choices=[None, "batch", "instance"], default=None)
 
     # Optimization
     p.add_argument("--epochs", type=int, default=200)
@@ -114,6 +115,7 @@ def main():
         dropout=args.dropout,
         up_mode=args.up_mode,
         block_type=args.block_type,
+        norm_type=args.norm_type,
     )
 
     n_params = sum(p.numel() for p in model.parameters() if p.requires_grad)

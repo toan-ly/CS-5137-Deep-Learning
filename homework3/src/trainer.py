@@ -302,3 +302,4 @@ class Trainer:
         if name not in criterions:
             raise ValueError(f'Unknown loss: {name}')
         return criterions[name]()
+        

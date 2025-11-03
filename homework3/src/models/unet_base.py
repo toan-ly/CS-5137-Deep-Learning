@@ -28,18 +28,20 @@ class DoubleConv(nn.Module):
         in_channels: int, 
         out_channels: int,
         activation: str = 'relu',
-        dropout: float = 0.0
+        dropout: float = 0.0,
+        norm=None
     ):
         super(DoubleConv, self).__init__()
-        act = get_activation(activation)
-        layers = [
-            nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1),
-            nn.BatchNorm2d(out_channels),
-            act,
-            nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1),
-            nn.BatchNorm2d(out_channels),
-            act,
-        ]
+        self.act = get_activation(activation)
+        layers = []
+        layers.append(nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1))
+        if norm is not None:
+            layers.append(norm(out_channels))
+        layers.append(self.act)
+        layers.append(nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1))
+        if norm is not None:
+            layers.append(norm(out_channels))
+        layers.append(self.act)
         if dropout > 0.0:
             layers.append(nn.Dropout2d(dropout))
 
@@ -59,45 +61,44 @@ class ResidualConv(nn.Module):
         in_channels: int, 
         out_channels: int,
         activation: str = 'relu',
-        dropout: float = 0.0
+        dropout: float = 0.0,
+        norm=None
     ):
         super(ResidualConv, self).__init__()
-        act = get_activation(activation)
-        self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1)
-        self.bn1 = nn.BatchNorm2d(out_channels)
-        self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1)
-        self.bn2 = nn.BatchNorm2d(out_channels)
-        self.activation = act
-        self.dropout = nn.Dropout2d(dropout) if dropout > 0.0 else None
+        self.act = get_activation(activation)
+
+        layers = []
+        layers.append(nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1))
+        if norm is not None:
+            layers.append(norm(out_channels))
+        layers.append(self.act)
+        layers.append(nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1))
+        if norm is not None:
+            layers.append(norm(out_channels))
+
+        self.double_conv = nn.Sequential(*layers)
 
         # If in_channels != out_channels, use a 1x1 conv to match dimensions
         if in_channels != out_channels:
-            self.downsample = nn.Sequential(
-                nn.Conv2d(in_channels, out_channels, kernel_size=1),
-                nn.BatchNorm2d(out_channels)
-            )
-        else:
-            self.downsample = None
+            skip = [nn.Conv2d(in_channels, out_channels, kernel_size=1)]
+            if norm is not None:
+                skip.append(norm(out_channels))
+            self.downsample = nn.Sequential(*skip)
 
+        if dropout > 0.0:
+            self.dropout = nn.Dropout2d(dropout)
+        
     def forward(self, x):
         residual = x
-        out = self.conv1(x)
-        out = self.bn1(out)
-        out = self.activation(out)
-        out = self.conv2(out)
-        out = self.bn2(out)
-
-        if self.downsample:
+        out = self.double_conv(x)
+        if self.downsample is not None: # match dimensions
             residual = self.downsample(residual)
-
-        out += residual # residual connection
-        out = self.activation(out)
-
-        if self.dropout:
+        out += residual
+        out = self.act(out)
+        if self.dropout is not None:
             out = self.dropout(out)
-
         return out
-    
+
 class DownBlock(nn.Module):
     """
     Downsampling block that applies DoubleConv followed by MaxPooling.
@@ -108,10 +109,11 @@ class DownBlock(nn.Module):
         out_channels: int,
         activation: str = 'relu',
         dropout: float = 0.0,
-        double_conv=DoubleConv
+        double_conv=DoubleConv,
+        norm=None
     ):
         super(DownBlock, self).__init__()
-        self.double_conv = double_conv(in_channels, out_channels, activation=activation, dropout=dropout)
+        self.double_conv = double_conv(in_channels, out_channels, activation=activation, dropout=dropout, norm=norm)
         self.maxpool = nn.MaxPool2d(kernel_size=2, stride=2)
 
     def forward(self, x):
@@ -130,7 +132,8 @@ class UpBlock(nn.Module):
         activation: str = 'relu',
         dropout: float = 0.0,
         up_mode: str = 'transpose',  # 'transpose' or 'bilinear'
-        double_conv=DoubleConv
+        double_conv=DoubleConv,
+        norm=None
     ):
         super(UpBlock, self).__init__()
         self.up_mode = up_mode
@@ -146,7 +149,7 @@ class UpBlock(nn.Module):
         else:
             raise ValueError(f"Unsupported up_mode: {up_mode}")
 
-        self.double_conv = double_conv(in_channels, out_channels, activation=activation, dropout=dropout)
+        self.double_conv = double_conv(in_channels, out_channels, activation=activation, dropout=dropout, norm=norm)
 
     def forward(self, x, skip_connection):
         x = self.up_conv(x)

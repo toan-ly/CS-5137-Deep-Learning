@@ -7,6 +7,17 @@ from .unet_base import *
 import warnings
 warnings.filterwarnings("ignore", category=RuntimeWarning, module="runpy")
 
+block_map = {
+    'base': DoubleConv,
+    'residual': ResidualConv,
+}
+
+norm_map = {
+    'batch': nn.BatchNorm2d,
+    # 'layer': nn.LayerNorm,
+    'instance': nn.InstanceNorm2d,
+}
+
 class UNet(nn.Module):
     def __init__(
         self,
@@ -16,7 +27,8 @@ class UNet(nn.Module):
         activation: str = 'relu',
         dropout: float = 0.0,
         up_mode: str = 'transpose',
-        block_type: str = 'base'  # 'base' or 'residual'
+        block_type: str = 'base',  # 'base' or 'residual'
+        norm_type: str = None,
     ):
         """
         Args:
@@ -33,13 +45,13 @@ class UNet(nn.Module):
 
         self.activation = get_activation(activation)
 
-        block_map = {
-            'base': DoubleConv,
-            'residual': ResidualConv,
-        }
-
         if block_type not in block_map:
             raise ValueError(f"Unsupported block_type: {block_type}. Supported types are: {list(block_map.keys())}")
+        if norm_type is not None and norm_type not in norm_map:
+            raise ValueError(f"Unsupported norm_type: {norm_type}. Supported types are: {list(norm_map.keys())}")
+
+        self.norm = norm_map.get(norm_type, None)
+
         self.double_conv = block_map[block_type]
 
         # Downsampling path / Encoder
@@ -52,7 +64,8 @@ class UNet(nn.Module):
                     out_channels=feature,
                     activation=activation,
                     dropout=dropout,
-                    double_conv=self.double_conv
+                    double_conv=self.double_conv,
+                    norm=self.norm
                 )
             )
             in_c = feature
@@ -62,7 +75,8 @@ class UNet(nn.Module):
             in_channels=features[-2],
             out_channels=features[-1],
             activation=activation,
-            dropout=dropout
+            dropout=dropout,
+            norm=self.norm
         )
 
         # Upsampling path / Decoder
@@ -76,7 +90,8 @@ class UNet(nn.Module):
                     activation=activation,
                     dropout=dropout,
                     up_mode=up_mode,
-                    double_conv=self.double_conv
+                    double_conv=self.double_conv,
+                    norm=self.norm
                 )
             )
             prev_c = feature
@@ -105,7 +120,9 @@ if __name__ == "__main__":
         features=[64, 128, 256, 512], 
         activation='relu', 
         dropout=0.0, 
-        up_mode='bilinear')(x)
+        up_mode='bilinear',
+        norm_type='batch'
+    )(x)
     assert preds.shape == (2, 2, 512, 512)
     print('Passed test 1')
 
@@ -115,7 +132,9 @@ if __name__ == "__main__":
         features=[64, 128, 256, 512, 1024], 
         activation='leaky_relu', 
         dropout=0.3, 
-        up_mode='transpose')(x)
+        up_mode='transpose',
+        norm_type='instance'
+    )(x)
     assert preds.shape == (2, 2, 512, 512)
     print('Passed test 2')
 
@@ -126,7 +145,8 @@ if __name__ == "__main__":
         activation='leaky_relu',
         dropout=0.3,
         up_mode='bilinear',
-        block_type='residual'
+        block_type='residual',
+        norm_type='batch'
     )(x)
     assert preds.shape == (2, 2, 512, 512)
     print('Passed test 3')
