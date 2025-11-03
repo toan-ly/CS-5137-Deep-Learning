@@ -26,7 +26,7 @@ def train_transforms(im_size=512, use_green_channel=False, use_patch=False, patc
     mode = ('bilinear', 'nearest')
 
     if use_patch:
-        num_samples = (im_size // patch_size) * 8 
+        num_samples = (im_size // patch_size) * 4
 
     return Compose([
         LoadImageD(keys=keys),
