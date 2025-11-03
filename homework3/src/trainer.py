@@ -251,9 +251,9 @@ class Trainer:
       
     def _get_optimizer(self, optim_name, lr):
         if optim_name == 'adam':
-            return optim.Adam(self.model.parameters(), lr=lr)
+            return optim.Adam(self.model.parameters(), lr=lr, weight_decay=1e-4)
         if optim_name == 'adamw':
-            return optim.AdamW(self.model.parameters(), lr=lr)
+            return optim.AdamW(self.model.parameters(), lr=lr, weight_decay=1e-4)
         if optim_name == 'sgd':
             return optim.SGD(self.model.parameters(), lr=lr, momentum=0.9)
         raise ValueError(f'Unknown optimizer: {optim_name}')    
