@@ -7,6 +7,7 @@ from pathlib import Path
 
 from .data.dataset import *
 from .utils import plot_loss
+from .models.unet import UNet
 
 ROOT = Path(__file__).parent.parent
 DATA_DIR = ROOT / 'data'
@@ -23,9 +24,11 @@ IM_SIZE = 512
 
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-def load_model(model, weight_path):
-    model.load_state_dict(torch.load(weight_path))
-    model.eval()
+def load_model(weight_path):
+    ckpt = torch.load(weight_path, map_location=DEVICE)
+    model = UNet(**ckpt['model_config'])
+    model.load_state_dict(ckpt['state_dict'])
+    model = model.to(DEVICE).eval()
     return model
 
 def main():

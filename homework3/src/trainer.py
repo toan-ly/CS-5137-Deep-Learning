@@ -40,6 +40,10 @@ class Trainer:
         self.train_loader = train_loader
         self.val_loader = val_loader
         self.test_loader = test_loader
+        self.loss_name = loss
+        self.optimizer_name = optimizer_name
+        self.lr = lr
+        self.scheduler_name = scheduler
         self.criterion = self._get_loss(loss)
         self.optimizer = self._get_optimizer(optimizer_name, lr)
         self.scheduler = None
@@ -159,7 +163,7 @@ class Trainer:
 
         # Save model
         if save_model_path:
-            torch.save(self.model.state_dict(), save_model_path)
+            self._save_checkpoint(save_model_path)
             print(f'Model saved to {save_model_path}')
 
         return self.checkpoint
@@ -231,7 +235,7 @@ class Trainer:
 
         plt.suptitle(f'Epoch {epoch+1}')
         plt.tight_layout()
-        plt.show()
+        # plt.show()
         if save_path:
             save_path = os.path.join(save_path, f'epoch_{epoch+1}.png')
             plt.savefig(save_path, bbox_inches='tight')
@@ -303,3 +307,15 @@ class Trainer:
             raise ValueError(f'Unknown loss: {name}')
         return criterions[name]()
         
+    def _save_checkpoint(self, path):
+        ckpt = {
+            'state_dict': self.model.state_dict(),
+            'model_config': self.model.model_config,
+            'train_config': {
+                'loss': self.loss_name,
+                'optimizer': self.optimizer_name,
+                'lr': self.lr,
+                'scheduler': self.scheduler_name,
+            }
+        }
+        torch.save(ckpt, path)

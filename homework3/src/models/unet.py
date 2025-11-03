@@ -45,6 +45,17 @@ class UNet(nn.Module):
 
         self.activation = get_activation(activation)
 
+        self.model_config = dict(
+            n_channels=n_channels,
+            n_classes=n_classes,
+            features=features,
+            activation=activation,
+            dropout=dropout,
+            up_mode=up_mode,
+            block_type=block_type,
+            norm_type=norm_type,
+        )
+
         if block_type not in block_map:
             raise ValueError(f"Unsupported block_type: {block_type}. Supported types are: {list(block_map.keys())}")
         if norm_type is not None and norm_type not in norm_map:

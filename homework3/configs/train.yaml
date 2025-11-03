@@ -5,11 +5,12 @@ num_workers: 2
 cache_rate: 1.0
 epochs: 200
 batch_size: 4
-loss: dice+bce@0.8,0.2
-lr: 0.0001
+loss: tversky+focal+hausdorff@0.45,0.45,0.1
+lr: 3e-4
+scheduler: cosine
 optimizer: adamw
 use_green_channel: true
-use_patch: false
+use_patch: true
 patch_size: 256
 seed: 42
 base_channels: 64
@@ -17,8 +18,8 @@ depth: 3
 in_channels: 3
 out_channels: 1
 device: cuda
-early_stopping: false
-patience: 20
+early_stopping: true
+patience: 10
 activation: leaky_relu
 up_mode: bilinear
 save_dir: checkpoints
