@@ -12,6 +12,7 @@ optimizer: adamw
 use_green_channel: true
 use_patch: true
 patch_size: 256
+dropout: 0.1
 seed: 42
 base_channels: 64
 depth: 3
