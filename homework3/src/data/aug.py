@@ -26,7 +26,7 @@ def train_transforms(im_size=512, use_green_channel=False, use_patch=False, patc
     mode = ('bilinear', 'nearest')
 
     if use_patch:
-        num_samples = (im_size // patch_size) * 4
+        num_samples = (im_size // patch_size) * 3
 
     return Compose([
         LoadImageD(keys=keys),
@@ -53,7 +53,7 @@ def train_transforms(im_size=512, use_green_channel=False, use_patch=False, patc
 
         # Photometric
         RandAdjustContrastD(keys=["image"], prob=0.25, gamma=(0.9, 1.1)),
-        RandHistogramShiftD(keys=["image"], prob=0.25, num_control_points=6),
+        # RandHistogramShiftD(keys=["image"], prob=0.25, num_control_points=6),
         RandGaussianNoiseD(keys=["image"], prob=0.1, mean=0.0, std=0.005),
 
         EnsureTypeD(keys=keys),
