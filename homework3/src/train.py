@@ -23,15 +23,14 @@ def build_parsers():
     p.add_argument("--cache_rate", type=float, default=0.0)
     p.add_argument("--use_green_channel", action='store_true')
     p.add_argument("--val_ratio", type=float, default=0.2)
-    p.add_argument("--use_patch", action='store_true')
     p.add_argument("--patch_size", type=int, default=256)
 
     # Model
     p.add_argument("--in_channels", type=int, default=3)
-    p.add_argument("--out_channels", type=int, default=1)
+    p.add_argument("--out_channels", type=int, default=3)
     p.add_argument("--base_channels", type=int, default=32)
     p.add_argument("--depth", type=int, default=2)
-    p.add_argument("--dropout", type=float, default=0.0)
+    p.add_argument("--dropout", type=float, default=0.1)
     p.add_argument("--activation", default="relu")
     p.add_argument("--up_mode", choices=["transpose","bilinear"], default="bilinear")
     p.add_argument("--block_type", choices=["base","residual"], default="base")
@@ -92,7 +91,6 @@ def main():
         val_ratio=args.val_ratio,
         seed=args.seed,
         use_green_channel=args.use_green_channel,
-        use_patch=args.use_patch,
         patch_size=args.patch_size
     )
 
