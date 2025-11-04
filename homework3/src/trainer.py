@@ -331,11 +331,14 @@ class Trainer:
 
     def _convert_to_binary(self, logits, threshold=0.5, is_mask=False):
         if is_mask:
+            logits = logits.unsqueeze(1) if logits.dim() == 3 else logits
             return (logits > 0).float()
         if logits.shape[1] == 3:
             probs = torch.softmax(logits, dim=1)
             vessel_probs = probs[:, 1, ...] + probs[:, 2, ...]
+            vessel_probs = vessel_probs.unsqueeze(1) if vessel_probs.dim() == 3 else vessel_probs
             return (vessel_probs > threshold).float()
         else:
             probs = torch.sigmoid(logits)
+            probs = probs.unsqueeze(1) if probs.dim() == 3 else probs
             return (probs > threshold).float()
