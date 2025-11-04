@@ -23,7 +23,7 @@ def build_parsers():
     p.add_argument("--cache_rate", type=float, default=0.0)
     p.add_argument("--use_green_channel", action='store_true')
     p.add_argument("--val_ratio", type=float, default=0.2)
-    p.add_argument("--patch_size", type=int, default=256)
+    p.add_argument("--patch_size", type=int, default=128)
 
     # Model
     p.add_argument("--in_channels", type=int, default=3)

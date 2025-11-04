@@ -5,7 +5,7 @@ num_workers: 2
 cache_rate: 1.0
 epochs: 200
 batch_size: 4
-loss: dicebce
+loss: dicece
 lr: 3e-4
 scheduler: cosine
 optimizer: adamw
