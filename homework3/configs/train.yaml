@@ -9,9 +9,9 @@ loss: tversky+focal+hausdorff@0.45,0.45,0.1
 lr: 3e-4
 scheduler: cosine
 optimizer: adamw
-use_green_channel: true
+use_green_channel: false
 use_patch: true
-patch_size: 256
+patch_size: 128
 dropout: 0.1
 seed: 42
 base_channels: 64

@@ -12,6 +12,7 @@ from monai.transforms import (
 )
 from monai.utils import set_determinism
 from src.data.clahe import apply_clahe
+from src.data.small_vessel import create_new_mask, extract_small_vessel
 
 ROOT = Path(__file__).parent.parent.parent
 IMG = ROOT / "data/train/image/20.png"
@@ -38,26 +39,28 @@ def base(use_green: bool):
         LoadImageD(keys=KEYS),
         EnsureChannelFirstD(keys=KEYS),
         ResizeD(keys=KEYS, spatial_size=(IM_SIZE, IM_SIZE), mode=MODE),
+        LambdaD(keys="mask", func=lambda x: (x > 0.5).astype(np.uint8)),
         LambdaD(keys="image", func=lambda x: x[1:2, ...] if use_green else x),
         LambdaD(keys="image", func=lambda x: apply_clahe(x, clip_limit=2.0, tile_grid_size=(8,8), prob=1.0)),
+        LambdaD(keys="mask", func=lambda x: create_new_mask(x, extract_small_vessel(x, kernel_size=5))),
         EnsureTypeD(keys=KEYS),
     ])
 
 def build_augs():
     return [
         ("Base",            Compose([])),
-        ("FlipH",           Compose([RandFlipD(keys=KEYS, prob=1.0, spatial_axis=0)])),
-        ("FlipV",           Compose([RandFlipD(keys=KEYS, prob=1.0, spatial_axis=1)])),
-        ("Rotate90",        Compose([RandRotate90D(keys=KEYS, prob=1.0, max_k=1)])),
-        ("RotateSmall",     Compose([RandRotateD(keys=KEYS, range_x=0.17, prob=1.0, mode=MODE)])),
+        # ("FlipH",           Compose([RandFlipD(keys=KEYS, prob=1.0, spatial_axis=0)])),
+        # ("FlipV",           Compose([RandFlipD(keys=KEYS, prob=1.0, spatial_axis=1)])),
+        # ("Rotate90",        Compose([RandRotate90D(keys=KEYS, prob=1.0, max_k=1)])),
+        ("RotateSmall",     Compose([RandRotateD(keys=KEYS, range_x=np.pi/12, prob=1.0, mode=MODE)])),
         ("Zoom", Compose([RandZoomD(keys=KEYS, min_zoom=0.95, max_zoom=1.05, prob=1.0, mode=MODE)])),
-        ("AdjustContrast",  Compose([RandAdjustContrastD(keys=["image"], prob=1.0, gamma=(0.9, 1.1))])),
+        ("AdjustContrast",  Compose([RandAdjustContrastD(keys=["image"], prob=1.0, gamma=(0.7, 1.3))])),
         ("HistShift",       Compose([RandHistogramShiftD(keys=["image"], num_control_points=6, prob=1.0)])),
         ("GaussNoise",      Compose([RandGaussianNoiseD(keys=["image"], prob=1.0, mean=0.0, std=0.01)])),
         ("GaussSmooth",     Compose([RandGaussianSmoothD(keys=["image"], sigma_x=(0.5,1.0), prob=1.0)])),
         ("RandCrop",     Compose([RandCropByPosNegLabelD(
-            keys=KEYS, label_key="mask", spatial_size=(256,256),
-            pos=3, neg=1, num_samples=2, image_key="image", image_threshold=0.0
+            keys=KEYS, label_key="mask", spatial_size=(128,128),
+            pos=3, neg=1, num_samples=9, image_key="image", image_threshold=0.0
         )])),
     ]
 
@@ -88,14 +91,15 @@ def visualize_augmentations(use_green: bool, outfile: str):
         axes[r0, c].imshow(img_d, cmap="gray" if img_d.ndim==2 else None)
         axes[r0, c].set_title(f"{name}\n{img_d.shape[0]}×{img_d.shape[1]}", fontsize=10)
         axes[r0, c].axis("off")
-        axes[r0+1, c].imshow(msk_d, cmap="gray")
+
+        axes[r0+1, c].imshow(msk_d)
         axes[r0+1, c].set_title("Mask", fontsize=9)
         axes[r0+1, c].axis("off")
 
-    for i in range(len(results), rows*cols):
-        r0, c = (i//cols)*2, i%cols
-        axes[r0, c].axis("off")
-        axes[r0+1, c].axis("off")
+    # for i in range(len(results), rows*cols):
+    #     r0, c = (i//cols)*2, i%cols
+    #     axes[r0, c].axis("off")
+    #     axes[r0+1, c].axis("off")
 
     plt.tight_layout()
     path = os.path.join(SAVE, outfile)

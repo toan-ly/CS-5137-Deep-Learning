@@ -6,7 +6,7 @@ import numpy as np
 from tqdm.auto import tqdm
 from monai.losses import (
     DiceLoss, FocalLoss, TverskyLoss, 
-    HausdorffDTLoss
+    HausdorffDTLoss, DiceCELoss
 )
 import matplotlib.pyplot as plt
 from PIL import Image
@@ -262,7 +262,7 @@ class Trainer:
         scheduler_map = {
             'step': optim.lr_scheduler.StepLR(self.optimizer, step_size=10, gamma=0.5),
             'plateau': optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, mode='min', factor=0.5, patience=5),
-            'cosine': optim.lr_scheduler.CosineAnnealingLR(self.optimizer, T_max=20, eta_min=1e-6),
+            'cosine': optim.lr_scheduler.CosineAnnealingLR(self.optimizer, T_max=100, eta_min=1e-6),
         }
         if scheduler_name not in scheduler_map:
             raise ValueError(f'Unknown scheduler: {scheduler_name}')
@@ -282,6 +282,12 @@ class Trainer:
             'focal': lambda: FocalLoss(gamma=2.0),
             'tversky': lambda: TverskyLoss(sigmoid=True, alpha=0.3, beta=0.7),
             'hausdorff': lambda: HausdorffDTLoss(sigmoid=True, include_background=True),
+            'dicece': lambda: DiceCELoss(
+                include_background=True,
+                to_onehot_y=True,
+                softmax=True,
+                weight=torch.tensor([1.0, 1.0, 2.0], device=self.device)
+            )
         }
 
         name = name.strip().lower()

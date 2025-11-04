@@ -1,6 +1,7 @@
 from pathlib import Path
 import os, glob, random
 from monai.data import Dataset, CacheDataset, DataLoader
+import torch
 from .aug import get_transforms
 
 def collect_pairs(root):
@@ -35,8 +36,8 @@ def make_loaders(
     val_ratio=0.2,
     seed=42,
     use_green_channel=False,
-    use_patch=False,
-    patch_size=256
+    # use_patch=False,
+    patch_size=128
 ):
     """
     Create training and validation data loaders.
@@ -45,7 +46,7 @@ def make_loaders(
     train_data = collect_pairs(train_root)
     train_data, val_data = split_data(train_data, val_ratio, seed)
 
-    train_transforms = get_transforms(im_size, use_green_channel=use_green_channel, is_train=True, use_patch=use_patch, patch_size=patch_size)
+    train_transforms = get_transforms(im_size, use_green_channel=use_green_channel, is_train=True, patch_size=patch_size)
     val_transforms = get_transforms(im_size, use_green_channel=use_green_channel, is_train=False)
 
     if cache_rate > 0:
@@ -84,10 +85,19 @@ if __name__ == "__main__":
     test_loader = make_test_loader(data_root, im_size=512, batch_size=1, num_workers=0, use_green_channel=False)
     for batch in train_loader:
         print(batch['image'].shape, batch['mask'].shape)
+        unique_classes = torch.unique(batch['mask'])
+        print(f'Unique classes in mask: {unique_classes}')
+        print(f'Type of image tensor: {batch["image"].dtype}, Type of mask tensor: {batch["mask"].dtype}')
         break
     for batch in val_loader:
         print(batch['image'].shape, batch['mask'].shape)
+        unique_classes = torch.unique(batch['mask'])
+        print(f'Unique classes in mask: {unique_classes}')
+        print(f'Type of image tensor: {batch["image"].dtype}, Type of mask tensor: {batch["mask"].dtype}')
         break
     for batch in test_loader:
         print(batch['image'].shape, batch['mask'].shape)
+        unique_classes = torch.unique(batch['mask'])
+        print(f'Unique classes in mask: {unique_classes}')
+        print(f'Type of image tensor: {batch["image"].dtype}, Type of mask tensor: {batch["mask"].dtype}')
         break

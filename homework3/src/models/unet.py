@@ -22,7 +22,7 @@ class UNet(nn.Module):
     def __init__(
         self,
         n_channels: int = 1,
-        n_classes: int = 1,
+        n_classes: int = 2,
         features: list = [64, 128, 256, 512, 1024], # 4 levels
         activation: str = 'relu',
         dropout: float = 0.0,
