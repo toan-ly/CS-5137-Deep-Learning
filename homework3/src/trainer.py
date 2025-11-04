@@ -8,6 +8,7 @@ from monai.losses import (
     DiceLoss, FocalLoss, TverskyLoss, 
     HausdorffDTLoss, DiceCELoss
 )
+from monai.inferers import sliding_window_inference
 import matplotlib.pyplot as plt
 from PIL import Image
 import os
@@ -53,8 +54,8 @@ class Trainer:
         # Early stopping
         self.early_stopping = early_stopping
         self.patience = patience
-        self.best_metric = -float('inf')
-        # self.best_metric = float('inf')
+        # self.best_metric = -float('inf')
+        self.best_metric = float('inf')
         self.epochs_no_improve = 0
         self.best_weights = None
 
@@ -73,22 +74,22 @@ class Trainer:
         dices, ious = [], []
         desc = f"Epoch [{epoch+1}/{epochs}] Training"
         for batch in tqdm(self.train_loader, desc=desc, leave=False):
-            imgs = batch['image'].to(self.device)
-            masks = batch['mask'].to(self.device)
+            imgs = batch['image'].to(self.device) # [B, C, H, W]
+            masks = batch['mask'].to(self.device) # [B, 1, H, W]
 
             self.optimizer.zero_grad()
-            outputs = self.model(imgs)
-            loss = self.criterion(outputs, masks)
+
+            logits = self.model(imgs) # [B, 3, H, W] for 3 classes
+            loss = self.criterion(logits, masks)
             loss.backward()
             self.optimizer.step()
 
             epoch_loss += loss.item() * imgs.size(0)
 
-            probs = torch.sigmoid(outputs)
-            preds = (probs > 0.5).float()
-            dice, iou = compute_dice_iou(preds, masks)
-            dices.append(dice)
-            ious.append(iou)
+            with torch.no_grad():
+                dice, iou = compute_dice_iou(self._convert_to_binary(logits), self._convert_to_binary(masks, is_mask=True))
+                dices.append(dice)
+                ious.append(iou)
 
         epoch_loss = epoch_loss / len(self.train_loader.dataset)
         return epoch_loss, np.mean(dices), np.mean(ious)
@@ -100,16 +101,14 @@ class Trainer:
         dices, ious = [], []
         desc = f"Epoch [{epoch+1}/{epochs}] Validation"
         for batch in tqdm(self.val_loader, desc=desc, leave=False):
-            imgs = batch['image'].to(self.device)
-            masks = batch['mask'].to(self.device)
+            imgs = batch['image'].to(self.device) # [B, C, H, W]
+            masks = batch['mask'].to(self.device) # [B, 1, H, W]
 
-            outputs = self.model(imgs)
-            loss = self.criterion(outputs, masks)
+            logits = self.model(imgs) 
+            loss = self.criterion(logits, masks)
             epoch_loss += loss.item() * imgs.size(0)
 
-            probs = torch.sigmoid(outputs)
-            preds = (probs > 0.5).float()
-            dice, iou = compute_dice_iou(preds, masks)
+            dice, iou = compute_dice_iou(self._convert_to_binary(logits), self._convert_to_binary(masks, is_mask=True))
             dices.append(dice)
             ious.append(iou)
 
@@ -137,10 +136,10 @@ class Trainer:
 
             # Early stopping
             if self.early_stopping:
-                if val_dice > self.best_metric:
-                # if val_loss < self.best_metric:
-                    self.best_metric = val_dice
-                    # self.best_metric = val_loss
+                # if val_dice > self.best_metric:
+                if val_loss < self.best_metric:
+                    # self.best_metric = val_dice
+                    self.best_metric = val_loss
                     self.epochs_no_improve = 0
                     self.best_weights = self.model.state_dict()
                 else:
@@ -159,7 +158,7 @@ class Trainer:
             self.model.load_state_dict(self.best_weights)
 
         total_time = time.time() - start_time
-        print(f'Training time: {total_time:.2f}s | (best val dice = {self.best_metric:.4f})')
+        print(f'Training time: {total_time:.2f}s | (best val metrics = {self.best_metric:.4f})')
 
         # Save model
         if save_model_path:
@@ -176,11 +175,15 @@ class Trainer:
             imgs = batch['image'].to(self.device)
             masks = batch['mask'].to(self.device)
 
-            outputs = self.model(imgs)
-            probs = torch.sigmoid(outputs)
-            preds = (probs > 0.5).float()
+            logits = sliding_window_inference(
+                inputs=imgs,
+                roi_size=(128, 128),
+                sw_batch_size=4,
+                overlap=0.5,
+                predictor=self.model,
+            )
 
-            dice, iou = compute_dice_iou(preds, masks)
+            dice, iou = compute_dice_iou(self._convert_to_binary(logits), self._convert_to_binary(masks, is_mask=True))
             dices.append(dice)
             ious.append(iou)
 
@@ -195,13 +198,13 @@ class Trainer:
             mask = batch['mask'].to(self.device)
 
             with torch.no_grad():
-                output = self.model(img)
-                prob = torch.sigmoid(output)
-                pred = (prob > 0.5).float()
+                logits = self.model(img)
+                pred_bin = self._convert_to_binary(logits)
+                mask_bin = self._convert_to_binary(mask, is_mask=True)
 
             imgs.append(img.cpu())
-            masks.append(mask.cpu())
-            preds.append(pred.cpu())
+            masks.append(mask_bin.cpu())
+            preds.append(pred_bin.cpu())
 
             if len(imgs) * img.size(0) >= num_samples:
                 break
@@ -325,3 +328,14 @@ class Trainer:
             }
         }
         torch.save(ckpt, path)
+
+    def _convert_to_binary(self, logits, threshold=0.5, is_mask=False):
+        if is_mask:
+            return (logits > 0).float()
+        if logits.shape[1] == 3:
+            probs = torch.softmax(logits, dim=1)
+            vessel_probs = probs[:, 1, ...] + probs[:, 2, ...]
+            return (vessel_probs > threshold).float()
+        else:
+            probs = torch.sigmoid(logits)
+            return (probs > threshold).float()
