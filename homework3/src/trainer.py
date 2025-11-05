@@ -44,8 +44,8 @@ class Trainer:
         # Early stopping
         self.early_stopping = early_stopping
         self.patience = patience
-        # self.best_metric = -float('inf')
-        self.best_metric = float('inf')
+        self.best_dice = -float('inf')
+        self.best_loss = float('inf')
         self.epochs_no_improve = 0
         self.best_weights = None
 
@@ -124,12 +124,12 @@ class Trainer:
                       f'Val Loss: {val_loss:.4f}, Val Dice: {val_dice:.4f}, Val IoU: {val_iou:.4f}')
                 visualize(self.model, self.val_loader, epoch, save_path=save_plots_path, num_samples=3, device=self.device)
 
+            self.best_dice = max(self.best_dice, val_dice)
+
             # Early stopping
             if self.early_stopping:
-                # if val_dice > self.best_metric:
-                if val_loss < self.best_metric:
-                    # self.best_metric = val_dice
-                    self.best_metric = val_loss
+                if val_loss < self.best_loss:
+                    self.best_loss = val_loss
                     self.epochs_no_improve = 0
                     self.best_weights = self.model.state_dict()
                 else:
@@ -148,7 +148,7 @@ class Trainer:
             self.model.load_state_dict(self.best_weights)
 
         total_time = time.time() - start_time
-        print(f'Training time: {total_time:.2f}s | (best val metrics = {self.best_metric:.4f})')
+        print(f'Training time: {total_time:.2f}s | (best val dice = {self.best_dice:.4f})')
 
         # Save model
         if save_model_path:
