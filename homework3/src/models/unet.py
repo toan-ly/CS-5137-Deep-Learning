@@ -109,6 +109,8 @@ class UNet(nn.Module):
             prev_c = feature
         self.final_conv = FinalOutput(features[0], n_classes)
 
+        self._init_weights()
+
     def forward(self, x):
         skip_connections = []
 
@@ -125,6 +127,16 @@ class UNet(nn.Module):
             x = up(x, skip)
 
         return self.final_conv(x)
+
+    def _init_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d) or isinstance(m, nn.ConvTranspose2d):
+                nn.init.kaiming_normal_(m.weight, nonlinearity='relu')
+                if m.bias is not None:
+                    nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.BatchNorm2d):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
 
 
 if __name__ == "__main__":
