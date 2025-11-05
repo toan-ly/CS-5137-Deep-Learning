@@ -41,8 +41,8 @@ def base(use_green: bool):
         ResizeD(keys=KEYS, spatial_size=(IM_SIZE, IM_SIZE), mode=MODE),
         LambdaD(keys="mask", func=lambda x: (x > 0.5).astype(np.uint8)),
         LambdaD(keys="image", func=lambda x: x[1:2, ...] if use_green else x),
-        LambdaD(keys="image", func=lambda x: apply_clahe(x, clip_limit=2.0, tile_grid_size=(8,8), prob=1.0)),
-        LambdaD(keys="mask", func=lambda x: create_new_mask(x, extract_small_vessel(x, kernel_size=5))),
+        # LambdaD(keys="image", func=lambda x: apply_clahe(x, clip_limit=2.0, tile_grid_size=(8,8), prob=1.0)),
+        LambdaD(keys="mask", func=lambda x: create_new_mask(x, extract_small_vessel(x, kernel_size=7, struct_elem='rect'))),
         EnsureTypeD(keys=KEYS),
     ])
 
@@ -56,11 +56,11 @@ def build_augs():
         ("Zoom", Compose([RandZoomD(keys=KEYS, min_zoom=0.95, max_zoom=1.05, prob=1.0, mode=MODE)])),
         ("AdjustContrast",  Compose([RandAdjustContrastD(keys=["image"], prob=1.0, gamma=(0.7, 1.3))])),
         ("HistShift",       Compose([RandHistogramShiftD(keys=["image"], num_control_points=6, prob=1.0)])),
-        ("GaussNoise",      Compose([RandGaussianNoiseD(keys=["image"], prob=1.0, mean=0.0, std=0.01)])),
+        ("GaussNoise",      Compose([RandGaussianNoiseD(keys=["image"], prob=1.0, mean=0.0, std=0.02)])),
         ("GaussSmooth",     Compose([RandGaussianSmoothD(keys=["image"], sigma_x=(0.5,1.0), prob=1.0)])),
         ("RandCrop",     Compose([RandCropByPosNegLabelD(
             keys=KEYS, label_key="mask", spatial_size=(128,128),
-            pos=3, neg=1, num_samples=9, image_key="image", image_threshold=0.0
+            pos=3, neg=1, num_samples=13, image_key="image", image_threshold=0.0
         )])),
     ]
 

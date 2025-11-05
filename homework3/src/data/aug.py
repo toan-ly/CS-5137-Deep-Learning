@@ -34,7 +34,7 @@ def train_transforms(im_size=512, use_green_channel=False, patch_size=128):
         EnsureChannelFirstD(keys=keys),
         # ResizeD(keys=keys, spatial_size=(im_size, im_size), mode=mode),
         LambdaD(keys=['mask'], func=lambda x: (x > 0.5).astype(np.uint8)),
-        LambdaD(keys=['mask'], func=lambda x: create_new_mask(x, extract_small_vessel(x, kernel_size=5))),
+        LambdaD(keys=['mask'], func=lambda x: create_new_mask(x, extract_small_vessel(x, kernel_size=7))),
 
         LambdaD(keys=['image'], func=lambda x: x[1:2, ...] if use_green_channel else x),
         # LambdaD(keys=['image'], func=lambda x: apply_clahe(x, clip_limit=2.0, tile_grid_size=(8,8), prob=1.0)),
@@ -58,7 +58,7 @@ def train_transforms(im_size=512, use_green_channel=False, patch_size=128):
             keys=keys,
             label_key='mask',
             spatial_size=(patch_size, patch_size),
-            pos=3, neg=1,
+            pos=4, neg=1,
             num_samples=num_samples,
             image_key='image',
             image_threshold=0,

@@ -11,7 +11,7 @@ scheduler: cosine
 optimizer: adamw
 use_green_channel: false
 patch_size: 128
-dropout: 0.1
+dropout: 0.0
 seed: 42
 base_channels: 64
 depth: 3
@@ -19,7 +19,7 @@ in_channels: 4
 out_channels: 3
 device: cuda
 early_stopping: true
-patience: 10
+patience: 15
 activation: leaky_relu
 up_mode: bilinear
 save_dir: checkpoints

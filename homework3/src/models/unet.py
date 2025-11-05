@@ -116,6 +116,9 @@ class UNet(nn.Module):
             skip, x = down(x)
             skip_connections.append(skip)
 
+        # Add heavy dropout here to make model work harder 
+        # on the abstract features
+        x = self.bridge_dropout(x) 
         x = self.bottleneck(x)
         
         for up, skip in zip(self.decoder, reversed(skip_connections)):
