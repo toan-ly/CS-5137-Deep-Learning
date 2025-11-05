@@ -69,7 +69,6 @@ class Trainer:
             self.optimizer.zero_grad()
 
             logits = self.model(imgs) # [B, 3, H, W] for 3 classes
-            logits = convert_to_binary(logits)
             loss = self.criterion(logits, masks)
             loss.backward()
             self.optimizer.step()
@@ -77,7 +76,7 @@ class Trainer:
             epoch_loss += loss.item() * imgs.size(0)
 
             with torch.no_grad():
-                dice, iou = compute_dice_iou(logits, convert_to_binary(masks, is_gt=True))
+                dice, iou = compute_dice_iou(convert_to_binary(logits), convert_to_binary(masks, is_gt=True))
                 dices.append(dice)
                 ious.append(iou)
 
@@ -94,12 +93,11 @@ class Trainer:
             imgs = batch['image'].to(self.device) # [B, C, H, W]
             masks = batch['mask'].to(self.device) # [B, 1, H, W]
 
-            logits = self.model(imgs) 
-            logits = convert_to_binary(logits)
+            logits = self.model(imgs) # [B, 3, H, W] for 3 classes
             loss = self.criterion(logits, masks)
             epoch_loss += loss.item() * imgs.size(0)
 
-            dice, iou = compute_dice_iou(logits, convert_to_binary(masks, is_gt=True))
+            dice, iou = compute_dice_iou(convert_to_binary(logits), convert_to_binary(masks, is_gt=True))
             dices.append(dice)
             ious.append(iou)
 
@@ -195,7 +193,11 @@ class Trainer:
                 use_softmax=True,
                 to_onehot_y=True
             ),
-            'tversky': lambda: TverskyLoss(sigmoid=True, alpha=0.3, beta=0.7),
+            'tversky': lambda: TverskyLoss(
+                softmax=True, 
+                to_onehot_y=True,
+                alpha=0.3, beta=0.7
+            ),
             'hausdorff': lambda: HausdorffDTLoss(sigmoid=True, include_background=True),
             'dicece': lambda: DiceCELoss(
                 include_background=True,
