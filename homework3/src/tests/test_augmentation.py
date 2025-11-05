@@ -8,13 +8,13 @@ from monai.transforms import (
     RandFlipD, RandRotateD, RandRotate90D, RandZoomD,
     RandAdjustContrastD, RandHistogramShiftD,
     RandGaussianNoiseD, RandGaussianSmoothD, RandCropByPosNegLabelD,
-    LambdaD, RandShiftIntensityD,
+    LambdaD, RandShiftIntensityD, RandGridDistortionD, RandScaleIntensityD,
 )
 from src.data.small_vessel import create_new_mask, extract_small_vessel
 
 ROOT = Path(__file__).parent.parent.parent
-IMG = ROOT / "data/train/image/20.png"
-MASK = ROOT / "data/train/mask/20.png"
+IMG = ROOT / "data/train/image/19.png"
+MASK = ROOT / "data/train/mask/19.png"
 IM_SIZE = 512
 SAVE = ROOT / "figures/augmentation_previews"; os.makedirs(SAVE, exist_ok=True)
 KEYS, MODE = ("image","mask"), ("bilinear","nearest")
@@ -52,13 +52,15 @@ def build_augs():
         ("RotateSmall",     Compose([RandRotateD(keys=KEYS, range_x=np.pi/12, prob=1.0, mode=MODE)])),
         ("Zoom", Compose([RandZoomD(keys=KEYS, min_zoom=0.95, max_zoom=1.05, prob=1.0, mode=MODE)])),
         ("AdjustContrast",  Compose([RandAdjustContrastD(keys=["image"], prob=1.0, gamma=(0.5, 1.5))])),
+        ("IntensityScale", Compose([RandScaleIntensityD(keys=["image"], factors=(-0.3, 0.3), prob=1.0)])),
         ("HistShift",       Compose([RandHistogramShiftD(keys=["image"], num_control_points=(3, 10), prob=1.0)])),
         ("GaussNoise",      Compose([RandGaussianNoiseD(keys=["image"], prob=1.0, mean=0.0, std=0.02)])),
         ("GaussSmooth",     Compose([RandGaussianSmoothD(keys=["image"], sigma_x=(0.6,1.2), prob=1.0)])),
         ("ShiftIntensity",  Compose([RandShiftIntensityD(keys=["image"], offsets=0.1, prob=1.0)])),
+        ("GridDistort",     Compose([RandGridDistortionD(keys=KEYS, prob=1.0, distort_limit=(-0.05, 0.05), mode=MODE)])),
         ("RandCrop",     Compose([RandCropByPosNegLabelD(
             keys=KEYS, label_key="mask", spatial_size=(128,128),
-            pos=4, neg=1, num_samples=13, image_key="image", image_threshold=0.0
+            pos=4, neg=1, num_samples=10, image_key="image", image_threshold=0.0
         )])),
     ]
 

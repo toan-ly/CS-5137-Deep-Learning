@@ -3,7 +3,7 @@ from monai.transforms import (
     ScaleIntensityRangeD, RandFlipD, RandRotateD, RandRotate90D,
     RandZoomD, EnsureTypeD, AsDiscreteD, RandGaussianNoiseD, 
     RandCropByPosNegLabelD, LambdaD, RandAdjustContrastD, RandHistogramShiftD,
-    RandShiftIntensityD, RandGaussianSmoothD,
+    RandShiftIntensityD, RandGaussianSmoothD, RandGridDistortionD, RandScaleIntensityD,
 )
 import numpy as np
 
@@ -41,18 +41,23 @@ def train_transforms(im_size=512, use_green_channel=False, patch_size=128):
 
         ScaleIntensityRangeD(keys=['image'], a_min=0, a_max=255, b_min=0.0, b_max=1.0, clip=True),
 
-        # Geometric
+        # ------------- Geometric -------------
+        # Basic flips and rotations
         RandFlipD(keys=keys, prob=0.5, spatial_axis=0), # horizontal flip
         RandFlipD(keys=keys, prob=0.5, spatial_axis=1), # vertical flip
         RandRotate90D(keys=keys, prob=0.5, max_k=3),
-        RandRotateD(keys=keys, range_x=np.pi/6, prob=0.5, mode=mode),
-        RandZoomD(keys=keys, min_zoom=0.8, max_zoom=1.2, prob=0.5, mode=mode),
+        RandRotateD(keys=keys, range_x=np.pi/4, prob=0.5, mode=mode),
+        RandZoomD(keys=keys, min_zoom=0.75, max_zoom=1.25, prob=0.5, mode=mode),
 
-        # Photometric
+        RandGridDistortionD(keys=keys, prob=0.5, distort_limit=(-0.05, 0.05), mode=mode),
+
+        # ------------- Photometric -------------
+        # Intensity and contrast adjustments
         RandAdjustContrastD(keys=["image"], prob=0.5, gamma=(0.5, 1.5)),
+        RandScaleIntensityD(keys=["image"], factors=(-0.3, 0.3), prob=0.5),
         RandHistogramShiftD(keys=["image"], prob=0.25, num_control_points=(3, 10)),
         RandShiftIntensityD(keys=["image"], offsets=0.1, prob=0.5),
-        RandGaussianSmoothD(keys=["image"], prob=0.3, sigma_x=(0.6, 1.2)),
+        # RandGaussianSmoothD(keys=["image"], prob=0.3, sigma_x=(0.6, 1.2)),
         RandGaussianNoiseD(keys=["image"], prob=0.3, mean=0.0, std=0.02),
 
         # Patch cropping
@@ -83,7 +88,7 @@ def val_transforms(im_size=512, use_green_channel=False):
         # LambdaD(keys=['image'], func=lambda x: apply_clahe(x, clip_limit=2.0, tile_grid_size=(8,8), prob=1.0)),
         LambdaD(keys=['image'], func=lambda x: append_clahe(x, clip_limit=2.0, tile_grid_size=(8,8), prob=1.0, use_green_channel=True)),
         ScaleIntensityRangeD(keys=['image'], a_min=0, a_max=255, b_min=0.0, b_max=1.0, clip=True),
-        LambdaD(keys=['mask'], func=lambda x: create_new_mask(x, extract_small_vessel(x, kernel_size=3))),
+        LambdaD(keys=['mask'], func=lambda x: create_new_mask(x, extract_small_vessel(x, kernel_size=7, struct_elem='cross'))),
         EnsureTypeD(keys=keys),
     ])
 
