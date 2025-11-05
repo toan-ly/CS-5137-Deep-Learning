@@ -81,7 +81,8 @@ def val_transforms(im_size=512, use_green_channel=False):
 
         LambdaD(keys=['mask'], func=lambda x: (x > 0.5).astype(np.uint8)),
         LambdaD(keys=['image'], func=lambda x: x[1:2, ...] if use_green_channel else x),
-        LambdaD(keys=['image'], func=lambda x: apply_clahe(x, clip_limit=2.0, tile_grid_size=(8,8), prob=1.0)),
+        # LambdaD(keys=['image'], func=lambda x: apply_clahe(x, clip_limit=2.0, tile_grid_size=(8,8), prob=1.0)),
+        LambdaD(keys=['image'], func=lambda x: append_clahe(x, clip_limit=2.0, tile_grid_size=(8,8), prob=1.0)),
         ScaleIntensityRangeD(keys=['image'], a_min=0, a_max=255, b_min=0.0, b_max=1.0, clip=True),
         LambdaD(keys=['mask'], func=lambda x: create_new_mask(x, extract_small_vessel(x, kernel_size=3))),
         EnsureTypeD(keys=keys),
