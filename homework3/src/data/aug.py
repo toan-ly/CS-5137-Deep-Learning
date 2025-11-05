@@ -3,7 +3,7 @@ from monai.transforms import (
     ScaleIntensityRangeD, RandFlipD, RandRotateD, RandRotate90D,
     RandZoomD, EnsureTypeD, AsDiscreteD, RandGaussianNoiseD, 
     RandCropByPosNegLabelD, LambdaD, RandAdjustContrastD, RandHistogramShiftD,
-    IdentityD, CopyItemsD, DeleteItemsD
+    RandShiftIntensityD, 
 )
 import numpy as np
 
@@ -32,9 +32,8 @@ def train_transforms(im_size=512, use_green_channel=False, patch_size=128):
     return Compose([
         LoadImageD(keys=keys),
         EnsureChannelFirstD(keys=keys),
-        # ResizeD(keys=keys, spatial_size=(im_size, im_size), mode=mode),
         LambdaD(keys=['mask'], func=lambda x: (x > 0.5).astype(np.uint8)),
-        LambdaD(keys=['mask'], func=lambda x: create_new_mask(x, extract_small_vessel(x, kernel_size=7))),
+        LambdaD(keys=['mask'], func=lambda x: create_new_mask(x, extract_small_vessel(x, kernel_size=7, struct_elem='cross'))),
 
         LambdaD(keys=['image'], func=lambda x: x[1:2, ...] if use_green_channel else x),
         # LambdaD(keys=['image'], func=lambda x: apply_clahe(x, clip_limit=2.0, tile_grid_size=(8,8), prob=1.0)),
@@ -42,16 +41,17 @@ def train_transforms(im_size=512, use_green_channel=False, patch_size=128):
 
         ScaleIntensityRangeD(keys=['image'], a_min=0, a_max=255, b_min=0.0, b_max=1.0, clip=True),
 
-        # Flip, Rotate, Zoom
+        # Geometric
         RandFlipD(keys=keys, prob=0.5, spatial_axis=0), # horizontal flip
         RandFlipD(keys=keys, prob=0.5, spatial_axis=1), # vertical flip
         RandRotate90D(keys=keys, prob=0.5, max_k=3),
-        RandRotateD(keys=keys, range_x=np.pi/12, prob=0.5, mode=mode),
-        RandZoomD(keys=keys, min_zoom=0.9, max_zoom=1.1, prob=0.25, mode=mode),
+        RandRotateD(keys=keys, range_x=np.pi/6, prob=0.5, mode=mode),
+        RandZoomD(keys=keys, min_zoom=0.8, max_zoom=1.2, prob=0.25, mode=mode),
 
         # Photometric
-        RandAdjustContrastD(keys=["image"], prob=0.25, gamma=(0.7, 1.3)),
+        RandAdjustContrastD(keys=["image"], prob=0.5, gamma=(0.6, 1.4)),
         # RandHistogramShiftD(keys=["image"], prob=0.25, num_control_points=6),
+        RandShiftIntensityD(keys=["image"], offsets=0.1, prob=0.5),
         RandGaussianNoiseD(keys=["image"], prob=0.1, mean=0.0, std=0.02),
 
         RandCropByPosNegLabelD(
@@ -66,8 +66,6 @@ def train_transforms(im_size=512, use_green_channel=False, patch_size=128):
 
         LambdaD(keys=['mask'], func=lambda x: x.astype(np.uint8)),
         EnsureTypeD(keys=keys),
-        # ToTensorD(keys=keys),
-        # AsDiscreteD(keys=['mask'], threshold=0.5),
     ])
 
 def val_transforms(im_size=512, use_green_channel=False):
@@ -77,7 +75,6 @@ def val_transforms(im_size=512, use_green_channel=False):
     return Compose([
         LoadImageD(keys=keys),
         EnsureChannelFirstD(keys=keys),
-        # ResizeD(keys=keys, spatial_size=(im_size, im_size), mode=mode),
 
         LambdaD(keys=['mask'], func=lambda x: (x > 0.5).astype(np.uint8)),
         LambdaD(keys=['image'], func=lambda x: x[1:2, ...] if use_green_channel else x),
@@ -86,7 +83,5 @@ def val_transforms(im_size=512, use_green_channel=False):
         ScaleIntensityRangeD(keys=['image'], a_min=0, a_max=255, b_min=0.0, b_max=1.0, clip=True),
         LambdaD(keys=['mask'], func=lambda x: create_new_mask(x, extract_small_vessel(x, kernel_size=3))),
         EnsureTypeD(keys=keys),
-        # ToTensorD(keys=keys),
-        # AsDiscreteD(keys=['mask'], threshold=0.5),
     ])
 

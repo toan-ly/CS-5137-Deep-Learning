@@ -8,18 +8,7 @@ from monai.losses import (
     DiceLoss, FocalLoss, TverskyLoss, 
     HausdorffDTLoss, DiceCELoss
 )
-from monai.inferers import sliding_window_inference
-import matplotlib.pyplot as plt
-from PIL import Image
-import os
-
-def compute_dice_iou(preds, targets):
-    eps = 1e-7
-    intersection = (preds * targets).sum((1, 2, 3)) # Sum over C, H, W
-    sum_preds_targets = preds.sum((1, 2, 3)) + targets.sum((1, 2, 3))
-    dice = (2. * intersection) / (sum_preds_targets + eps)
-    iou = intersection / (sum_preds_targets - intersection + eps)
-    return dice.mean().item(), iou.mean().item()
+from .utils import *
 
 class Trainer:
     def __init__(
@@ -80,6 +69,7 @@ class Trainer:
             self.optimizer.zero_grad()
 
             logits = self.model(imgs) # [B, 3, H, W] for 3 classes
+            logits = convert_to_binary(logits)
             loss = self.criterion(logits, masks)
             loss.backward()
             self.optimizer.step()
@@ -87,7 +77,7 @@ class Trainer:
             epoch_loss += loss.item() * imgs.size(0)
 
             with torch.no_grad():
-                dice, iou = compute_dice_iou(self._convert_to_binary(logits), self._convert_to_binary(masks, is_mask=True))
+                dice, iou = compute_dice_iou(logits, convert_to_binary(masks, is_gt=True))
                 dices.append(dice)
                 ious.append(iou)
 
@@ -105,10 +95,11 @@ class Trainer:
             masks = batch['mask'].to(self.device) # [B, 1, H, W]
 
             logits = self.model(imgs) 
+            logits = convert_to_binary(logits)
             loss = self.criterion(logits, masks)
             epoch_loss += loss.item() * imgs.size(0)
 
-            dice, iou = compute_dice_iou(self._convert_to_binary(logits), self._convert_to_binary(masks, is_mask=True))
+            dice, iou = compute_dice_iou(logits, convert_to_binary(masks, is_gt=True))
             dices.append(dice)
             ious.append(iou)
 
@@ -132,7 +123,7 @@ class Trainer:
                 print(f'Epoch {epoch+1}/{epochs} - '
                       f'Train Loss: {train_loss:.4f}, Train Dice: {train_dice:.4f}, Train IoU: {train_iou:.4f} | '
                       f'Val Loss: {val_loss:.4f}, Val Dice: {val_dice:.4f}, Val IoU: {val_iou:.4f}')
-                self._visualize(num_samples=3, save_path=save_plots_path, epoch=epoch)
+                visualize(self.model, self.val_loader, epoch, save_path=save_plots_path, num_samples=3)
 
             # Early stopping
             if self.early_stopping:
@@ -166,94 +157,6 @@ class Trainer:
             print(f'Model saved to {save_model_path}')
 
         return self.checkpoint
-        
-    @torch.no_grad()
-    def test(self):
-        self.model.eval()
-        dices, ious = [], []
-        for batch in tqdm(self.test_loader, desc="Testing", leave=False):
-            imgs = batch['image'].to(self.device)
-            masks = batch['mask'].to(self.device)
-
-            logits = sliding_window_inference(
-                inputs=imgs,
-                roi_size=(128, 128),
-                sw_batch_size=4,
-                overlap=0.5,
-                predictor=self.model,
-            )
-
-            dice, iou = compute_dice_iou(self._convert_to_binary(logits), self._convert_to_binary(masks, is_mask=True))
-            dices.append(dice)
-            ious.append(iou)
-
-        return np.mean(dices), np.mean(ious)
-
-    @torch.no_grad()
-    def _visualize(self, epoch, save_path=None, num_samples=3):
-        self.model.eval()
-        imgs, masks, preds = [], [], []
-        for batch in self.val_loader:
-            img = batch['image'].to(self.device)
-            mask = batch['mask'].to(self.device)
-
-            with torch.no_grad():
-                logits = self.model(img)
-                pred_bin = self._convert_to_binary(logits)
-                mask_bin = self._convert_to_binary(mask, is_mask=True)
-
-            imgs.append(img.cpu())
-            masks.append(mask_bin.cpu())
-            preds.append(pred_bin.cpu())
-
-            if len(imgs) * img.size(0) >= num_samples:
-                break
-    
-        imgs = torch.cat(imgs, dim=0)[:num_samples]
-        masks = torch.cat(masks, dim=0)[:num_samples]
-        preds = torch.cat(preds, dim=0)[:num_samples]
-
-        plt.rcParams['figure.figsize'] = [10, 4 * num_samples]
-        fig, axes = plt.subplots(num_samples, 3)
-        for i in range(num_samples):
-            img = imgs[i].permute(1, 2, 0).numpy()
-            if img.max() > 1:
-                img = img / 255.0  # Normalize for visualization
-
-            pred = preds[i].squeeze().numpy()
-            mask = masks[i].squeeze().numpy()
-            dice, iou = self._dice_iou_sample(pred, mask)
-
-            # If image has 4 channels after appending clahe, only display rgb
-            if img.shape[2] == 4:
-                img = img[:, :, :3]
-            axes[i, 0].imshow(img)
-            axes[i, 0].set_title('Input Image')
-            axes[i, 0].axis('off')
-
-            axes[i, 1].imshow(masks[i].squeeze(), cmap='gray')
-            axes[i, 1].set_title('Ground Truth')
-            axes[i, 1].axis('off')
-
-            axes[i, 2].imshow(preds[i].squeeze(), cmap='gray')
-            axes[i, 2].set_title(f'Prediction\nDice: {dice:.2f}, IoU: {iou:.2f}')
-            axes[i, 2].axis('off')
-
-        plt.suptitle(f'Epoch {epoch+1}')
-        plt.tight_layout()
-        # plt.show()
-        if save_path:
-            save_path = os.path.join(save_path, f'epoch_{epoch+1}.png')
-            plt.savefig(save_path, bbox_inches='tight')
-        plt.close(fig)
-    
-    def _dice_iou_sample(self, pred, target):
-        eps = 1e-7
-        intersection = (pred * target).sum()
-        sum_preds_targets = pred.sum() + target.sum()
-        dice = (2. * intersection) / (sum_preds_targets + eps)
-        iou = intersection / (sum_preds_targets - intersection + eps)
-        return dice.item(), iou.item()
       
     def _get_optimizer(self, optim_name, lr):
         if optim_name == 'adam':
@@ -282,17 +185,23 @@ class Trainer:
             'bce+dice'
             'bce+dice@0.3,0.7'
         """
+        cls_weights = torch.tensor([1.0, 1.0, 3.0], device=self.device)
         criterions = {
             'bce': nn.BCEWithLogitsLoss,
             'dice': lambda: DiceLoss(sigmoid=True, squared_pred=True),
-            'focal': lambda: FocalLoss(gamma=2.0),
+            'focal': lambda: FocalLoss(
+                gamma=2.0,
+                weight=cls_weights,
+                use_softmax=True,
+                to_onehot_y=True
+            ),
             'tversky': lambda: TverskyLoss(sigmoid=True, alpha=0.3, beta=0.7),
             'hausdorff': lambda: HausdorffDTLoss(sigmoid=True, include_background=True),
             'dicece': lambda: DiceCELoss(
                 include_background=True,
                 to_onehot_y=True,
                 softmax=True,
-                weight=torch.tensor([1.0, 1.0, 3.0], device=self.device)
+                weight=cls_weights
             )
         }
 
@@ -332,16 +241,4 @@ class Trainer:
         }
         torch.save(ckpt, path)
 
-    def _convert_to_binary(self, logits, threshold=0.5, is_mask=False):
-        if is_mask:
-            logits = logits.unsqueeze(1) if logits.dim() == 3 else logits
-            return (logits > 0).float()
-        if logits.shape[1] == 3:
-            probs = torch.softmax(logits, dim=1)
-            vessel_probs = probs[:, 1, ...] + probs[:, 2, ...]
-            vessel_probs = vessel_probs.unsqueeze(1) if vessel_probs.dim() == 3 else vessel_probs
-            return (vessel_probs > threshold).float()
-        else:
-            probs = torch.sigmoid(logits)
-            probs = probs.unsqueeze(1) if probs.dim() == 3 else probs
-            return (probs > threshold).float()
+

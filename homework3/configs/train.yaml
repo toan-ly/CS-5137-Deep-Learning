@@ -20,7 +20,7 @@ out_channels: 3
 device: cuda
 early_stopping: true
 patience: 15
-activation: leaky_relu
+activation: relu
 up_mode: bilinear
 save_dir: checkpoints
 save_plots_path: results/predictions

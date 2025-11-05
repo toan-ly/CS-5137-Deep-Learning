@@ -1,4 +1,4 @@
-import os, math
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 from pathlib import Path
@@ -8,10 +8,8 @@ from monai.transforms import (
     RandFlipD, RandRotateD, RandRotate90D, RandZoomD,
     RandAdjustContrastD, RandHistogramShiftD,
     RandGaussianNoiseD, RandGaussianSmoothD, RandCropByPosNegLabelD,
-    LambdaD
+    LambdaD, RandShiftIntensityD,
 )
-from monai.utils import set_determinism
-from src.data.clahe import apply_clahe
 from src.data.small_vessel import create_new_mask, extract_small_vessel
 
 ROOT = Path(__file__).parent.parent.parent
@@ -20,7 +18,6 @@ MASK = ROOT / "data/train/mask/20.png"
 IM_SIZE = 512
 SAVE = ROOT / "figures/augmentation_previews"; os.makedirs(SAVE, exist_ok=True)
 KEYS, MODE = ("image","mask"), ("bilinear","nearest")
-# set_determinism(42)
 
 def preprocess(x):
     if hasattr(x, "as_tensor"): x = x.as_tensor()
@@ -42,7 +39,7 @@ def base(use_green: bool):
         LambdaD(keys="mask", func=lambda x: (x > 0.5).astype(np.uint8)),
         LambdaD(keys="image", func=lambda x: x[1:2, ...] if use_green else x),
         # LambdaD(keys="image", func=lambda x: apply_clahe(x, clip_limit=2.0, tile_grid_size=(8,8), prob=1.0)),
-        LambdaD(keys="mask", func=lambda x: create_new_mask(x, extract_small_vessel(x, kernel_size=7, struct_elem='rect'))),
+        LambdaD(keys="mask", func=lambda x: create_new_mask(x, extract_small_vessel(x, kernel_size=7, struct_elem='cross'))),
         EnsureTypeD(keys=KEYS),
     ])
 
@@ -54,13 +51,14 @@ def build_augs():
         # ("Rotate90",        Compose([RandRotate90D(keys=KEYS, prob=1.0, max_k=1)])),
         ("RotateSmall",     Compose([RandRotateD(keys=KEYS, range_x=np.pi/12, prob=1.0, mode=MODE)])),
         ("Zoom", Compose([RandZoomD(keys=KEYS, min_zoom=0.95, max_zoom=1.05, prob=1.0, mode=MODE)])),
-        ("AdjustContrast",  Compose([RandAdjustContrastD(keys=["image"], prob=1.0, gamma=(0.7, 1.3))])),
-        ("HistShift",       Compose([RandHistogramShiftD(keys=["image"], num_control_points=6, prob=1.0)])),
+        ("AdjustContrast",  Compose([RandAdjustContrastD(keys=["image"], prob=1.0, gamma=(0.5, 1.5))])),
+        ("HistShift",       Compose([RandHistogramShiftD(keys=["image"], num_control_points=(3, 10), prob=1.0)])),
         ("GaussNoise",      Compose([RandGaussianNoiseD(keys=["image"], prob=1.0, mean=0.0, std=0.02)])),
-        ("GaussSmooth",     Compose([RandGaussianSmoothD(keys=["image"], sigma_x=(0.5,1.0), prob=1.0)])),
+        ("GaussSmooth",     Compose([RandGaussianSmoothD(keys=["image"], sigma_x=(0.6,1.2), prob=1.0)])),
+        ("ShiftIntensity",  Compose([RandShiftIntensityD(keys=["image"], offsets=0.1, prob=1.0)])),
         ("RandCrop",     Compose([RandCropByPosNegLabelD(
             keys=KEYS, label_key="mask", spatial_size=(128,128),
-            pos=3, neg=1, num_samples=13, image_key="image", image_threshold=0.0
+            pos=4, neg=1, num_samples=13, image_key="image", image_threshold=0.0
         )])),
     ]
 
