@@ -89,6 +89,7 @@ class UNet(nn.Module):
             dropout=dropout,
             norm=self.norm
         )
+        self.bridge_dropout = nn.Dropout2d(p=0.5) # dropout at the bridge 
 
         # Upsampling path / Decoder
         self.decoder = nn.ModuleList()

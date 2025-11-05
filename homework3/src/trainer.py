@@ -224,6 +224,9 @@ class Trainer:
             mask = masks[i].squeeze().numpy()
             dice, iou = self._dice_iou_sample(pred, mask)
 
+            # If image has 4 channels after appending clahe, only display rgb
+            if img.shape[2] == 4:
+                img = img[:, :, :3]
             axes[i, 0].imshow(img)
             axes[i, 0].set_title('Input Image')
             axes[i, 0].axis('off')
