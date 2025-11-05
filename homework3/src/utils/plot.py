@@ -40,7 +40,7 @@ def visualize(model, loader, epoch, save_path=None, num_samples=3, device='cpu')
         with torch.no_grad():
             logits = model(img)
             pred_bin = convert_to_binary(logits)
-            mask_bin = convert_to_binary(mask, is_mask=True)
+            mask_bin = convert_to_binary(mask, is_gt=True)
 
         imgs.append(img.cpu())
         masks.append(mask_bin.cpu())
