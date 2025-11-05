@@ -113,7 +113,7 @@ def load_model(weight_path):
     model = UNet(**ckpt['model_config'])
     model.load_state_dict(ckpt['state_dict'])
     model = model.to(DEVICE).eval()
-    return model, ckpt['model_config']
+    return model, ckpt
 
 def main():
     print(f'=' * 20 + ' Evaluation ' + '=' * 20)
@@ -128,7 +128,9 @@ def main():
     metrics = []
     ckpt_dirs = glob.glob(str(CKPT_DIR / '*/*/best_model.pth'))
     for ckpt_path in ckpt_dirs:
-        model, model_config = load_model(ckpt_path)
+        model, ckpt = load_model(ckpt_path)
+        model_config = ckpt['model_config']
+        n_params = ckpt['n_params']
         features = model_config['features']
         depth = len(features) - 1
         use_norm = 'norm' if model_config.get('norm_type', None) else 'no-norm'
@@ -141,6 +143,7 @@ def main():
 
         metrics.append({
             'Model': model_name,
+            'Parameters': n_params,
             'Dice': dice,
             'IoU': iou
         })

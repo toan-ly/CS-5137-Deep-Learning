@@ -27,6 +27,7 @@ class Trainer:
     ):
         self.device = device
         self.model = model.to(self.device)
+        self.n_params = sum(p.numel() for p in self.model.parameters() if p.requires_grad)
         self.train_loader = train_loader
         self.val_loader = val_loader
         self.test_loader = test_loader
@@ -234,6 +235,7 @@ class Trainer:
         ckpt = {
             'state_dict': self.model.state_dict(),
             'model_config': self.model.model_config,
+            'n_params': self.n_params,
             'train_config': {
                 'loss': self.loss_name,
                 'optimizer': self.optimizer_name,
