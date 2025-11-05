@@ -29,7 +29,7 @@ class Trainer:
         val_loader,
         test_loader,
         device,
-        loss='bce_dice',
+        loss='dice',
         optimizer_name='adam',
         lr=0.001,
         early_stopping=True,
@@ -289,7 +289,7 @@ class Trainer:
                 include_background=True,
                 to_onehot_y=True,
                 softmax=True,
-                weight=torch.tensor([1.0, 1.0, 2.0], device=self.device)
+                weight=torch.tensor([1.0, 1.0, 3.0], device=self.device)
             )
         }
 

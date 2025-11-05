@@ -7,7 +7,7 @@ from monai.transforms import (
 )
 import numpy as np
 
-from .clahe import apply_clahe
+from .clahe import apply_clahe, append_clahe
 from .small_vessel import create_new_mask, extract_small_vessel
 
 def get_transforms(
@@ -37,7 +37,9 @@ def train_transforms(im_size=512, use_green_channel=False, patch_size=128):
         LambdaD(keys=['mask'], func=lambda x: create_new_mask(x, extract_small_vessel(x, kernel_size=5))),
 
         LambdaD(keys=['image'], func=lambda x: x[1:2, ...] if use_green_channel else x),
-        LambdaD(keys=['image'], func=lambda x: apply_clahe(x, clip_limit=2.0, tile_grid_size=(8,8), prob=1.0)),
+        # LambdaD(keys=['image'], func=lambda x: apply_clahe(x, clip_limit=2.0, tile_grid_size=(8,8), prob=1.0)),
+        LambdaD(keys=['image'], func=lambda x: append_clahe(x, clip_limit=2.0, tile_grid_size=(8,8), prob=1.0)),
+
         ScaleIntensityRangeD(keys=['image'], a_min=0, a_max=255, b_min=0.0, b_max=1.0, clip=True),
 
         # Flip, Rotate, Zoom

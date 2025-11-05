@@ -15,7 +15,7 @@ dropout: 0.1
 seed: 42
 base_channels: 64
 depth: 3
-in_channels: 3
+in_channels: 4
 out_channels: 3
 device: cuda
 early_stopping: true

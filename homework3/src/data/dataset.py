@@ -81,7 +81,7 @@ def make_test_loader(
 
 if __name__ == "__main__":
     data_root = Path(__file__).parent.parent.parent / 'data'
-    train_loader, val_loader = make_loaders(data_root, im_size=512,  batch_size=2, num_workers=0, cache_rate=0.5, use_green_channel=True)
+    train_loader, val_loader = make_loaders(data_root, im_size=512,  batch_size=2, num_workers=0, cache_rate=0.5, use_green_channel=False)
     test_loader = make_test_loader(data_root, im_size=512, batch_size=1, num_workers=0, use_green_channel=False)
     for batch in train_loader:
         print(batch['image'].shape, batch['mask'].shape)
