@@ -30,12 +30,12 @@ def plot_loss(loss_df, save_dir):
     plt.savefig(os.path.join(save_dir, 'train_curve.png'))
 
 @torch.no_grad()
-def visualize(model, loader, epoch, save_path=None, num_samples=3):
+def visualize(model, loader, epoch, save_path=None, num_samples=3, device='cpu'):
     model.eval()
     imgs, masks, preds = [], [], []
     for batch in loader:
-        img = batch['image'].to(model.device)
-        mask = batch['mask'].to(model.device)
+        img = batch['image'].to(device)
+        mask = batch['mask'].to(device)
 
         with torch.no_grad():
             logits = model(img)

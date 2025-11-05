@@ -121,7 +121,7 @@ class Trainer:
                 print(f'Epoch {epoch+1}/{epochs} - '
                       f'Train Loss: {train_loss:.4f}, Train Dice: {train_dice:.4f}, Train IoU: {train_iou:.4f} | '
                       f'Val Loss: {val_loss:.4f}, Val Dice: {val_dice:.4f}, Val IoU: {val_iou:.4f}')
-                visualize(self.model, self.val_loader, epoch, save_path=save_plots_path, num_samples=3)
+                visualize(self.model, self.val_loader, epoch, save_path=save_plots_path, num_samples=3, device=self.device)
 
             # Early stopping
             if self.early_stopping:
@@ -198,7 +198,7 @@ class Trainer:
                 to_onehot_y=True,
                 alpha=0.3, beta=0.7
             ),
-            'hausdorff': lambda: HausdorffDTLoss(sigmoid=True, include_background=True),
+            'hausdorff': lambda: HausdorffDTLoss(softmax=True, include_background=True),
             'dicece': lambda: DiceCELoss(
                 include_background=True,
                 to_onehot_y=True,
