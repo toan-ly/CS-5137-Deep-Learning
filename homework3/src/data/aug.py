@@ -47,7 +47,7 @@ def train_transforms(im_size=512, use_green_channel=False, patch_size=128):
         RandFlipD(keys=keys, prob=0.5, spatial_axis=1), # vertical flip
         RandRotate90D(keys=keys, prob=0.5, max_k=3),
         RandRotateD(keys=keys, range_x=np.pi/4, prob=0.5, mode=mode),
-        RandZoomD(keys=keys, min_zoom=0.75, max_zoom=1.25, prob=0.5, mode=mode),
+        RandZoomD(keys=keys, min_zoom=0.8, max_zoom=1.2, prob=0.5, mode=mode),
 
         # Grid distortion
         RandGridDistortionD(keys=keys, prob=0.5, distort_limit=(-0.05, 0.05), mode=mode),
