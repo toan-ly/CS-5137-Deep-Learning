@@ -85,6 +85,7 @@ class ResidualConv(nn.Module):
                 skip.append(norm(out_channels))
             self.downsample = nn.Sequential(*skip)
 
+        self.dropout = None
         if dropout > 0.0:
             self.dropout = nn.Dropout2d(dropout)
         

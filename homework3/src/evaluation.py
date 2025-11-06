@@ -141,6 +141,7 @@ def main():
         dice, iou = test(model, test_loader, model_name, threshold=THRESHOLD)
         print(f"Test Dice: {dice:.4f}, Test IoU: {iou:.4f}\n")
 
+        n_params = f'{n_params / 1e6:.2f}M'  # convert to million
         metrics.append({
             'Model': model_name,
             'Parameters': n_params,
