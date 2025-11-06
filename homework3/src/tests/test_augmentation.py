@@ -39,7 +39,7 @@ def base(use_green: bool):
         LambdaD(keys="mask", func=lambda x: (x > 0.5).astype(np.uint8)),
         LambdaD(keys="image", func=lambda x: x[1:2, ...] if use_green else x),
         # LambdaD(keys="image", func=lambda x: apply_clahe(x, clip_limit=2.0, tile_grid_size=(8,8), prob=1.0)),
-        LambdaD(keys="mask", func=lambda x: create_new_mask(x, extract_small_vessel(x, kernel_size=7, struct_elem='cross'))),
+        LambdaD(keys="mask", func=lambda x: create_new_mask(x, extract_small_vessel(x, kernel_size=5, struct_elem='cross'))),
         EnsureTypeD(keys=KEYS),
     ])
 
