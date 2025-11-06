@@ -109,7 +109,7 @@ class UNet(nn.Module):
             prev_c = feature
         self.final_conv = FinalOutput(features[0], n_classes)
 
-        self._init_weights()
+        # self._init_weights()
 
     def forward(self, x):
         skip_connections = []
