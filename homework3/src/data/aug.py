@@ -56,8 +56,8 @@ def train_transforms(im_size=512, use_green_channel=False, patch_size=128):
         # Intensity and contrast adjustments
         RandAdjustContrastD(keys=["image"], prob=0.5, gamma=(0.5, 1.5)),
         RandScaleIntensityD(keys=["image"], factors=(-0.3, 0.3), prob=0.5),
-        RandHistogramShiftD(keys=["image"], prob=0.25, num_control_points=(3, 10)),
-        RandShiftIntensityD(keys=["image"], offsets=0.1, prob=0.5),
+        # RandHistogramShiftD(keys=["image"], prob=0.25, num_control_points=(3, 10)),
+        # RandShiftIntensityD(keys=["image"], offsets=0.1, prob=0.5),
 
         # RandGaussianSmoothD(keys=["image"], prob=0.3, sigma_x=(0.6, 1.2)),
         RandGaussianNoiseD(keys=["image"], prob=0.3, mean=0.0, std=0.02),
