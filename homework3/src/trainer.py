@@ -187,7 +187,7 @@ class Trainer:
         cls_weights = torch.tensor([1.0, 1.0, 3.0], device=self.device)
         criterions = {
             'bce': nn.BCEWithLogitsLoss,
-            'dice': lambda: DiceLoss(sigmoid=True, squared_pred=True),
+            'dice': lambda: DiceLoss(softmax=True, squared_pred=True, to_onehot_y=True),
             'focal': lambda: FocalLoss(
                 gamma=2.0,
                 weight=cls_weights,
@@ -199,7 +199,11 @@ class Trainer:
                 to_onehot_y=True,
                 alpha=0.3, beta=0.7
             ),
-            'hausdorff': lambda: HausdorffDTLoss(softmax=True, include_background=True),
+            'hausdorff': lambda: HausdorffDTLoss(
+                softmax=True, 
+                include_background=True, 
+                to_onehot_y=True
+            ),
             'dicece': lambda: DiceCELoss(
                 include_background=True,
                 to_onehot_y=True,
