@@ -134,7 +134,12 @@ def main():
         features = model_config['features']
         depth = len(features) - 1
         use_norm = 'norm' if model_config.get('norm_type', None) else 'no-norm'
-        model_name = f'UNET[{features[0]}-{depth}-{use_norm}]'
+
+        if model_config['block_type'] == 'base':
+            model_name = 'UNET'
+        elif model_config['block_type'] == 'residual':
+            model_name = 'ResUNET'
+        model_name += f'[{features[0]}-{depth}-{use_norm}]'
         print(f'Model: {model_name}')
         print({ckpt_path})
 
