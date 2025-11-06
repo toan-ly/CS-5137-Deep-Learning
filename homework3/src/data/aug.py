@@ -54,8 +54,8 @@ def train_transforms(im_size=512, use_green_channel=False, patch_size=128):
 
         # ------------- Photometric -------------
         # Intensity and contrast adjustments
-        RandAdjustContrastD(keys=["image"], prob=0.5, gamma=(0.5, 1.5)),
-        RandScaleIntensityD(keys=["image"], factors=(-0.3, 0.3), prob=0.5),
+        RandAdjustContrastD(keys=["image"], prob=0.3, gamma=(0.6, 1.4)),
+        RandScaleIntensityD(keys=["image"], factors=(-0.3, 0.3), prob=0.3),
         # RandHistogramShiftD(keys=["image"], prob=0.25, num_control_points=(3, 10)),
         # RandShiftIntensityD(keys=["image"], offsets=0.1, prob=0.5),
 
