@@ -133,13 +133,14 @@ def main():
         n_params = ckpt['n_params']
         features = model_config['features']
         depth = len(features) - 1
+        loss = ckpt['train_config']['loss']
         use_norm = 'norm' if model_config.get('norm_type', None) else 'no-norm'
 
         if model_config['block_type'] == 'base':
             model_name = 'UNET'
         elif model_config['block_type'] == 'residual':
             model_name = 'ResUNET'
-        model_name += f'[{features[0]}-{depth}-{use_norm}]'
+        model_name += f'[{features[0]}-{depth}]-{use_norm}-{loss}'
         print(f'Model: {model_name}')
         print({ckpt_path})
 

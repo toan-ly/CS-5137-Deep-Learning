@@ -29,3 +29,6 @@ unzip:
 	@echo ">>> Done! Files saved to:"
 	@echo "    - $(CHECKPOINTS_DIR)/$(DIR)/"
 	@echo "    - $(PLOTS_DIR)/$(DIR)/"
+
+test:
+	uv run -m src.evaluation
