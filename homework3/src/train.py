@@ -32,7 +32,7 @@ def build_parsers():
     p.add_argument("--depth", type=int, default=2)
     p.add_argument("--dropout", type=float, default=0.1)
     p.add_argument("--activation", default="relu")
-    p.add_argument("--up_mode", choices=["transpose","bilinear"], default="bilinear")
+    p.add_argument("--up_mode", choices=["transpose","bilinear", "nearest"], default="bilinear")
     p.add_argument("--block_type", choices=["base","residual"], default="base")
     p.add_argument("--norm_type", required=False, choices=[None, "batch", "instance"], default=None)
 
