@@ -40,7 +40,6 @@ class UNet(nn.Module):
             up_mode: upsampling mode, either 'transpose' for ConvTranspose2d or 'bilinear' for Upsample
         """
         super(UNet, self).__init__()
-        assert up_mode in ['transpose', 'bilinear'], "up_mode must be 'transpose' or 'bilinear'"
         assert len(features) >= 2, "features must contain at least 1 encoder level and a bottleneck"
 
         self.activation = get_activation(activation)
