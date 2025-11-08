@@ -4,8 +4,9 @@ import torch
 from pathlib import Path
 import numpy as np
 from tqdm import tqdm
+
 from .data.dataset import *
-from .utils import plot_loss, compute_dice_iou, convert_to_binary, compute_dice_iou_sample
+from .utils import compute_dice_iou, convert_to_binary, compute_dice_iou_sample, postprocess_mask
 from .models.unet import UNet
 from monai.inferers import sliding_window_inference
 import pandas as pd
@@ -71,6 +72,21 @@ def visualize_test(imgs, masks, preds, save_path=None, num_samples=2):
 
     plt.close(fig)
 
+def postprocessing(preds):
+    """
+    Post-process predicted masks
+
+    Args:
+        preds: Predicted masks (batch_size, 1, H, W)
+    """
+    batch_size = preds.shape[0]
+    processed_preds = []
+    for i in range(batch_size):
+        mask = preds[i, 0].cpu().numpy()
+        mask = postprocess_mask(mask, radius=1)
+        processed_preds.append(torch.tensor(mask).unsqueeze(0))
+    processed_preds = torch.stack(processed_preds, dim=0)
+    return processed_preds
 
 @torch.no_grad()
 def test(model, test_loader, model_name, threshold=0.5):
@@ -95,6 +111,7 @@ def test(model, test_loader, model_name, threshold=0.5):
         )
         preds = convert_to_binary(logits, threshold=threshold)
         masks = convert_to_binary(masks, threshold=threshold, is_gt=True)
+        # preds = postprocessing(preds)
 
         dice, iou = compute_dice_iou(preds, masks)
         dices.append(dice)
@@ -133,29 +150,39 @@ def main():
         n_params = ckpt['n_params']
         features = model_config['features']
         depth = len(features) - 1
-        loss = ckpt['train_config']['loss']
-        use_norm = 'norm' if model_config.get('norm_type', None) else 'no-norm'
+        use_norm = 'norm' if model_config.get('norm_type', None) else 'nonorm'
+        upsampling_mode = model_config['up_mode']
 
+        loss = ckpt['train_config']['loss']
+        if '@' in loss:
+            loss = loss.split('@')[0]
         if model_config['block_type'] == 'base':
             model_name = 'UNET'
         elif model_config['block_type'] == 'residual':
             model_name = 'ResUNET'
-        model_name += f'[{features[0]}-{depth}]-{use_norm}-{loss}'
+        model_name += f'[{features[0]}-{depth}]_{use_norm}_{upsampling_mode}_{loss}'
         print(f'Model: {model_name}')
         print({ckpt_path})
+
+        if (RESULTS_DIR / model_name).exists():
+            print(f"Results for {model_name} already exist. Skipping evaluation.\n")
+            continue
 
         dice, iou = test(model, test_loader, model_name, threshold=THRESHOLD)
         print(f"Test Dice: {dice:.4f}, Test IoU: {iou:.4f}\n")
 
-        n_params = f'{n_params / 1e6:.2f}M'  # convert to million
         metrics.append({
             'Model': model_name,
-            'Parameters': n_params,
+            'Parameters': f'{n_params / 1e6:.2f}M',
             'Dice': dice,
             'IoU': iou
         })
 
     metrics_df = pd.DataFrame(metrics)
+    if METRIC_PATH.exists():
+        existing_df = pd.read_csv(METRIC_PATH)
+        metrics_df = pd.concat([existing_df, metrics_df], ignore_index=True)
+    metrics_df = metrics_df.sort_values(by='Dice', ascending=False).reset_index(drop=True)
     metrics_df.to_csv(METRIC_PATH, index=False)
     print(f"Saved evaluation metrics to {METRIC_PATH}")
 

@@ -143,7 +143,7 @@ class UpBlock(nn.Module):
             self.up_conv = nn.ConvTranspose2d(in_channels, in_channels // 2, kernel_size=2, stride=2)
         elif up_mode in ('bilinear', 'nearest'):
             self.up_conv = nn.Sequential(
-                nn.Upsample(scale_factor=2, mode=up_mode),
+                nn.Upsample(scale_factor=2, mode=up_mode, align_corners=True if up_mode=='bilinear' else None),
                 # Use 1x1 conv to reduce the number of channels since bilinear doesn't change channels
                 nn.Conv2d(in_channels, in_channels // 2, kernel_size=1)
             )
