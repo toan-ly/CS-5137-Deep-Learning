@@ -14,6 +14,7 @@ import warnings
 warnings.filterwarnings("ignore", category=UserWarning)
 
 import matplotlib.pyplot as plt
+from matplotlib.patches import Patch
 
 
 ROOT = Path(__file__).parent.parent
@@ -32,7 +33,23 @@ THRESHOLD = 0.6
 
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-def visualize_test(imgs, masks, preds, save_path=None, num_samples=2):
+def _overlay(img, gt_mask, pred_mask):
+    """
+    Create an overlay image showing GT and Pred masks on the original image
+    Blue: GT only (False Negative)
+    Green: Pred only (False Positive)
+    Red: Overlap (True Positive)
+    """
+    overlay_img = img.copy()
+    gt = gt_mask == 1
+    pred = pred_mask == 1
+
+    overlay_img[pred] = [0, 1, 0] # Green for Pred
+    overlay_img[gt] = [0, 0, 1] # Blue for GT
+    overlay_img[gt & pred] = [1, 0, 0] # Red for overlap
+    return overlay_img
+
+def visualize_test(imgs, masks, preds, model_name=None, save_path=None, num_samples=2):
     """
     Plot the original images, GT and Pred masks for test set
 
@@ -43,7 +60,10 @@ def visualize_test(imgs, masks, preds, save_path=None, num_samples=2):
         save_path: Path to save the figure
         num_samples: Number of samples to visualize (number of rows)
     """
-    fig, axes = plt.subplots(num_samples, 3, figsize=(10, 4 * num_samples))
+    fig, axes = plt.subplots(num_samples, 4, figsize=(12, 3.5 * num_samples))
+
+    if num_samples == 1:
+        axes = axes[np.newaxis, :]
     for i in range(num_samples):
         img = imgs[i].permute(1, 2, 0).numpy()
         # if img.max() > 1:
@@ -58,17 +78,24 @@ def visualize_test(imgs, masks, preds, save_path=None, num_samples=2):
         axes[i, 0].axis('off')
 
         axes[i, 1].imshow(mask, cmap='gray')
-        axes[i, 1].set_title('Ground Truth')
+        axes[i, 1].set_title('GT')
         axes[i, 1].axis('off')
 
         dice, iou = compute_dice_iou_sample(pred, mask)
         axes[i, 2].imshow(pred, cmap='gray')
-        axes[i, 2].set_title(f'Prediction\nDice: {dice:.2f}, IoU: {iou:.2f}')
+        axes[i, 2].set_title(f'Pred (Dice: {dice:.2f}, IoU: {iou:.2f})')
         axes[i, 2].axis('off')
 
-    plt.tight_layout()
+        overlay = _overlay(img, mask, pred)
+        axes[i, 3].imshow(overlay)
+        axes[i, 3].set_title('Overlay')
+        axes[i, 3].axis('off')
+
+    plt.tight_layout(rect=[0, 0, 1, 0.95])
+    if model_name:
+        plt.suptitle(f'{model_name}', fontsize=14)
     if save_path:
-        plt.savefig(save_path)
+        plt.savefig(save_path, bbox_inches='tight', dpi=300)
 
     plt.close(fig)
 
@@ -129,7 +156,8 @@ def test(model, test_loader, model_name, threshold=0.5):
         visualize_test(
             imgs, masks, preds, 
             save_path=pred_path / f'{i}.png',
-            num_samples=imgs.size(0)
+            num_samples=imgs.size(0),
+            model_name=model_name
         )
 
     return np.mean(dices), np.mean(ious)
@@ -239,12 +267,6 @@ def main():
     evaluate_model(ckpt_dirs, loss_dirs, test_loader)
 
     # rename_checkpoints_dirs(ckpt_dirs)
-
-
-
-    
-
-
 
 
 if __name__ == "__main__":

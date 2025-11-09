@@ -31,4 +31,4 @@ unzip:
 	@echo "    - $(PLOTS_DIR)/$(DIR)/"
 
 test:
-	uv run -m src.evaluation
+	uv run -m src.main
