@@ -139,6 +139,7 @@ class UNet(nn.Module):
 
 
 if __name__ == "__main__":
+    # Only for testing
     x = torch.randn((2, 1, 512, 512))
     preds = UNet(
         n_channels=1, 

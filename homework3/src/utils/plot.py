@@ -4,6 +4,9 @@ import torch
 from .utils import compute_dice_iou_sample, convert_to_binary
 
 def plot_loss(loss_df, save_dir):
+    """
+    Plot training and validation loss, dice, and IoU curves.
+    """
     os.makedirs(save_dir, exist_ok=True)
     fig, axs = plt.subplots(1, 3, figsize=(12, 4))
     axs[0].plot(loss_df['epoch'], loss_df['train_loss'], label='train_loss')
@@ -32,6 +35,17 @@ def plot_loss(loss_df, save_dir):
 
 @torch.no_grad()
 def visualize(model, loader, epoch, save_path=None, num_samples=3, device='cpu'):
+    """
+    Visualize model predictions on a few samples
+
+    Args:
+        model: the trained model
+        loader: DataLoader 
+        epoch: current epoch number (for title)
+        save_path: directory to save the figure
+        num_samples: number of samples to visualize
+        device: device to run the model on
+    """
     model.eval()
     imgs, masks, preds = [], [], []
     for batch in loader:

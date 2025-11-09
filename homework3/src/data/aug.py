@@ -1,7 +1,7 @@
 from monai.transforms import (
-    LoadImageD, EnsureChannelFirstD, Compose, ResizeD,
+    LoadImageD, EnsureChannelFirstD, Compose, 
     ScaleIntensityRangeD, RandFlipD, RandRotateD, RandRotate90D,
-    RandZoomD, EnsureTypeD, AsDiscreteD, RandGaussianNoiseD, 
+    RandZoomD, EnsureTypeD, RandGaussianNoiseD, 
     RandCropByPosNegLabelD, LambdaD, RandAdjustContrastD, RandHistogramShiftD,
     RandShiftIntensityD, RandGaussianSmoothD, RandGridDistortionD, RandScaleIntensityD,
 )
@@ -14,9 +14,17 @@ def get_transforms(
     im_size=512,
     use_green_channel=False,
     is_train=True,
-    # use_patch=False,
     patch_size=128
 ):
+    """
+    Get data augmentation transforms for training or validation.    
+    
+    Args:
+        im_size: Size to resize images and masks to (im_size, im_size)
+        use_green_channel: Whether to use only the green channel of the images
+        is_train: Whether to get training or validation transforms
+        patch_size: Size of patches to crop from images and masks (only for training)
+    """
     if is_train:
         return train_transforms(im_size, use_green_channel, patch_size)
     else:
@@ -24,6 +32,14 @@ def get_transforms(
 
 
 def train_transforms(im_size=512, use_green_channel=False, patch_size=128):
+    """
+    Create training data augmentation transforms.
+
+    Args:
+        im_size: Size to resize images and masks to (im_size, im_size)
+        use_green_channel: Whether to use only the green channel of the images
+        patch_size: Size of patches to crop from images and masks
+    """
     keys = ('image', 'mask')
     mode = ('bilinear', 'nearest')
 
@@ -78,6 +94,13 @@ def train_transforms(im_size=512, use_green_channel=False, patch_size=128):
     ])
 
 def val_transforms(im_size=512, use_green_channel=False):
+    """
+    Create validation data augmentation transforms.
+
+    Args:
+        im_size: Size to resize images and masks to (im_size, im_size)
+        use_green_channel: Whether to use only the green channel of the images
+    """
     keys = ('image', 'mask')
     mode = ('bilinear', 'nearest')
 

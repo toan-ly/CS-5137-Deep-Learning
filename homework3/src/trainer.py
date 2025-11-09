@@ -179,10 +179,12 @@ class Trainer:
     def _get_loss(self, name):
         """
         Examples of loss_name:
+            'dicece' (default)
             'bce' 
             'dice'
             'bce+dice'
             'bce+dice@0.3,0.7'
+            'tversky+focal+hausdorff@0.45,0.45,0.1'
         """
         cls_weights = torch.tensor([1.0, 1.0, 3.0], device=self.device)
         criterions = {
@@ -236,6 +238,9 @@ class Trainer:
         return criterions[name]()
         
     def _save_checkpoint(self, path):
+        """
+        Save model checkpoint including model state, config, and training configs
+        """
         ckpt = {
             'state_dict': self.model.state_dict(),
             'model_config': self.model.model_config,

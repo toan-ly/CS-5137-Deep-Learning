@@ -96,11 +96,6 @@ def visualize_augmentations(use_green: bool, outfile: str):
         axes[r0+1, c].set_title("Mask", fontsize=9)
         axes[r0+1, c].axis("off")
 
-    # for i in range(len(results), rows*cols):
-    #     r0, c = (i//cols)*2, i%cols
-    #     axes[r0, c].axis("off")
-    #     axes[r0+1, c].axis("off")
-
     plt.tight_layout()
     path = os.path.join(SAVE, outfile)
     plt.savefig(path, dpi=300)

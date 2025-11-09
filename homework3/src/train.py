@@ -12,6 +12,9 @@ from src.trainer import Trainer
 import pandas as pd
 
 def build_parsers():
+    """
+    Build argument parser for training script
+    """
     p = argparse.ArgumentParser("Training script", fromfile_prefix_chars='@')
     p.add_argument("--config", type=str, default=None)
     # Data
@@ -54,6 +57,9 @@ def build_parsers():
     return p
 
 def parse_args():
+    """
+    Parse command line arguments and defined YAML config file
+    """
     p = build_parsers()
 
     # Get training configs from yaml file if provided
