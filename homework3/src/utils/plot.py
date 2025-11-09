@@ -4,27 +4,28 @@ import torch
 from .utils import compute_dice_iou_sample, convert_to_binary
 
 def plot_loss(loss_df, save_dir):
+    os.makedirs(save_dir, exist_ok=True)
     fig, axs = plt.subplots(1, 3, figsize=(12, 4))
     axs[0].plot(loss_df['epoch'], loss_df['train_loss'], label='train_loss')
     axs[0].plot(loss_df['epoch'], loss_df['val_loss'], label='val_loss')
     axs[0].set_xlabel('Epoch')
     axs[0].set_ylabel('Loss')
     axs[0].set_title('Training and Validation Loss')
-    axs[0].legend()
+    axs[0].legend(loc='upper right')
 
     axs[1].plot(loss_df['epoch'], loss_df['train_dice'], label='train_dice')
     axs[1].plot(loss_df['epoch'], loss_df['val_dice'], label='val_dice')
     axs[1].set_xlabel('Epoch')
     axs[1].set_ylabel('Dice')
     axs[1].set_title('Training and Validation Dice')
-    axs[1].legend()
+    axs[1].legend(loc='lower right')
 
     axs[2].plot(loss_df['epoch'], loss_df['train_iou'], label='train_iou')
     axs[2].plot(loss_df['epoch'], loss_df['val_iou'], label='val_iou')
     axs[2].set_xlabel('Epoch')
     axs[2].set_ylabel('IoU')
     axs[2].set_title('Training and Validation IoU')
-    axs[2].legend()
+    axs[2].legend(loc='lower right')
 
     plt.tight_layout()
     plt.savefig(os.path.join(save_dir, 'train_curve.png'))

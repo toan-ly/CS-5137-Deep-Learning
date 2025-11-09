@@ -6,7 +6,7 @@ import numpy as np
 from tqdm import tqdm
 
 from .data.dataset import *
-from .utils import compute_dice_iou, convert_to_binary, compute_dice_iou_sample, postprocess_mask
+from .utils import compute_dice_iou, convert_to_binary, compute_dice_iou_sample, postprocess_mask, plot_loss
 from .models.unet import UNet
 from monai.inferers import sliding_window_inference
 import pandas as pd
@@ -90,6 +90,15 @@ def postprocessing(preds):
 
 @torch.no_grad()
 def test(model, test_loader, model_name, threshold=0.5):
+    """
+    Test the model and compute Dice and IoU
+
+    Args:
+        model: Trained model
+        test_loader: DataLoader for the test set
+        model_name: Name of the model (for saving results)
+        threshold: Threshold for converting logits to binary masks
+    """
     model.eval()
 
     pred_path = RESULTS_DIR / model_name
@@ -126,11 +135,94 @@ def test(model, test_loader, model_name, threshold=0.5):
     return np.mean(dices), np.mean(ious)
 
 def load_model(weight_path):
+    """
+    Load a trained model from a checkpoint file
+
+    Args:
+        weight_path: Path to the model weights file
+    """
     ckpt = torch.load(weight_path, map_location=DEVICE)
     model = UNet(**ckpt['model_config'])
     model.load_state_dict(ckpt['state_dict'])
     model = model.to(DEVICE).eval()
     return model, ckpt
+
+def evaluate_model(checkpoint_dirs, loss_dirs, test_loader):
+    """
+    Evaluate all trained models on the test set
+
+    Args:
+        checkpoint_dirs: List of model weights paths
+        loss_dirs: List of training history csv paths
+        test_loader: DataLoader for the test set
+    """
+    metrics = []
+    for ckpt_path, loss_path in zip(checkpoint_dirs, loss_dirs):
+        model, ckpt = load_model(ckpt_path)
+        model_config = ckpt['model_config']
+        n_params = ckpt['n_params']
+        features = model_config['features']
+        depth = len(features) - 1
+        use_norm = 'norm' if model_config.get('norm_type', None) else 'nonorm'
+        upsampling_mode = model_config['up_mode']
+
+        if model_config['block_type'] == 'base':
+            model_name = 'UNET'
+        elif model_config['block_type'] == 'residual':
+            model_name = 'ResUNET'
+
+        model_name += f'[{features[0]}-{depth}]_{use_norm}_{upsampling_mode}'
+        print(f'Model: {model_name}')
+        print({ckpt_path})
+
+        if (RESULTS_DIR / model_name).exists():
+            print(f"Results for {model_name} already exist. Skipping evaluation.\n")
+            continue
+
+        plot_loss(pd.read_csv(loss_path), save_dir=RESULTS_DIR / model_name)
+        dice, iou = test(model, test_loader, model_name, threshold=THRESHOLD)
+        print(f"Test Dice: {dice:.4f}, Test IoU: {iou:.4f}\n")
+
+        metrics.append({
+            'Model': model_name,
+            'Parameters': f'{n_params / 1e6:.2f}M',
+            'Dice': dice,
+            'IoU': iou
+        })
+    metrics_df = pd.DataFrame(metrics)
+    if METRIC_PATH.exists():
+        existing_df = pd.read_csv(METRIC_PATH)
+        metrics_df = pd.concat([existing_df, metrics_df], ignore_index=True)
+    metrics_df = metrics_df.sort_values(by='Dice', ascending=False).reset_index(drop=True)
+    metrics_df.to_csv(METRIC_PATH, index=False)
+    print(f"Saved evaluation metrics to {METRIC_PATH}")
+
+def rename_checkpoints_dirs(ckpt_dirs):
+    """
+    Rename checkpoint directories based on model configuration
+    (Only for better file organization)
+    """
+    for ckpt_path in ckpt_dirs:
+        _, ckpt = load_model(ckpt_path)
+        model_config = ckpt['model_config']
+        features = model_config['features']
+        depth = len(features) - 1
+        upsampling_mode = model_config['up_mode']
+
+        if model_config['block_type'] == 'base':
+            model_name = 'UNET'
+        elif model_config['block_type'] == 'residual':
+            model_name = 'ResUNET'
+        model_name += f'[{features[0]}-{depth}]_{upsampling_mode}'
+        
+        orig_path = CKPT_DIR / ckpt_path.split('/')[-3] 
+        new_path = CKPT_DIR / model_name
+        if new_path.exists():
+            print(f"Directory {new_path} already exists")
+            continue
+
+        os.rename(orig_path, new_path)
+
 
 def main():
     print(f'=' * 20 + ' Evaluation ' + '=' * 20)
@@ -141,50 +233,16 @@ def main():
         num_workers=0,
         use_green_channel=USE_GREEN
     )
-
-    metrics = []
+    
+    loss_dirs = glob.glob(str(CKPT_DIR / '*/*/training_history.csv'))
     ckpt_dirs = glob.glob(str(CKPT_DIR / '*/*/best_model.pth'))
-    for ckpt_path in ckpt_dirs:
-        model, ckpt = load_model(ckpt_path)
-        model_config = ckpt['model_config']
-        n_params = ckpt['n_params']
-        features = model_config['features']
-        depth = len(features) - 1
-        use_norm = 'norm' if model_config.get('norm_type', None) else 'nonorm'
-        upsampling_mode = model_config['up_mode']
+    evaluate_model(ckpt_dirs, loss_dirs, test_loader)
 
-        loss = ckpt['train_config']['loss']
-        if '@' in loss:
-            loss = loss.split('@')[0]
-        if model_config['block_type'] == 'base':
-            model_name = 'UNET'
-        elif model_config['block_type'] == 'residual':
-            model_name = 'ResUNET'
-        model_name += f'[{features[0]}-{depth}]_{use_norm}_{upsampling_mode}_{loss}'
-        print(f'Model: {model_name}')
-        print({ckpt_path})
+    # rename_checkpoints_dirs(ckpt_dirs)
 
-        if (RESULTS_DIR / model_name).exists():
-            print(f"Results for {model_name} already exist. Skipping evaluation.\n")
-            continue
 
-        dice, iou = test(model, test_loader, model_name, threshold=THRESHOLD)
-        print(f"Test Dice: {dice:.4f}, Test IoU: {iou:.4f}\n")
 
-        metrics.append({
-            'Model': model_name,
-            'Parameters': f'{n_params / 1e6:.2f}M',
-            'Dice': dice,
-            'IoU': iou
-        })
-
-    metrics_df = pd.DataFrame(metrics)
-    if METRIC_PATH.exists():
-        existing_df = pd.read_csv(METRIC_PATH)
-        metrics_df = pd.concat([existing_df, metrics_df], ignore_index=True)
-    metrics_df = metrics_df.sort_values(by='Dice', ascending=False).reset_index(drop=True)
-    metrics_df.to_csv(METRIC_PATH, index=False)
-    print(f"Saved evaluation metrics to {METRIC_PATH}")
+    
 
 
 
