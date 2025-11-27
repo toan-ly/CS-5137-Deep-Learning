@@ -143,10 +143,10 @@ def train_model(
 
 
 
-def evaluate_on_test(
+def test_model(
     model,
     test_loader,
-    device,
+    device=torch.device('cpu'),
     plot_path: str | None = None,
 ):
     model.eval()
@@ -219,8 +219,6 @@ def evaluate_on_test(
             )
 
         plt.plot([0, 1], [0, 1], 'k--', lw=1)
-        # plt.xlim([0.0, 1.0])
-        # plt.ylim([0.0, 1.05])
         plt.xlabel("False Positive Rate (FPR)")
         plt.ylabel("True Positive Rate (TPR)")
         plt.title("ROC curves")
@@ -319,10 +317,10 @@ def main():
         # Evaluate best checkpoint on test set + plot ROC curve
         model.load_state_dict(torch.load(os.path.join(weights_path, f"{model_name}.pt"), map_location=device))
 
-        test_loss, test_acc, test_f1, test_auc = evaluate_on_test(
+        test_loss, test_acc, test_f1, test_auc = test_model(
             model,
             test_loader,
-            device,
+            device=device,
             plot_path=os.path.join(loss_path, f"{model_name}_roc.png"),
         )
         results_summary.append({
